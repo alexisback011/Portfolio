@@ -84,7 +84,14 @@
     z-index: 1000;
   }
 }
-
+.hide {
+  background: var(--bg);
+  overflow: hidden;
+  span {
+    transform: translateY(100%);
+    display: inline-block;
+  }
+}
 //Cursor Effects
 .cursor-effect {
   width: 2.5rem;
