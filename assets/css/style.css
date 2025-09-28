@@ -1,13 +1,13 @@
 
 .text-changer{
-    height: 70px;
+    height: 45px;
     padding: 10px;
     border-radius: 8px;
     display: flex;
     color: white;
     font-family: "poppins", sans-serif;
     font-weight: 500;
-    font-size: 45px;
+    font-size: 30px;
     box-sizing: content-box;
 }
 .i-text {
