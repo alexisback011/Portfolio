@@ -28,6 +28,8 @@ def _normalize_db_url(url: str) -> str:
         return "postgresql+asyncpg://" + url[len("postgres://"):]
     if url.startswith("postgresql://"):
         return "postgresql+asyncpg://" + url[len("postgresql://"):]
+    if url.startswith("sqlite://"):
+        return "sqlite+aiosqlite" + url[len("sqlite"):]
     return url
 
 
@@ -304,12 +306,18 @@ def _normalize_origin(url: str) -> str:
     return url
 
 
-frontend_origin = _normalize_origin(os.environ.get("FRONTEND_URL", "http://localhost:3000"))
+def _cors_config() -> dict:
+    raw = os.environ.get("FRONTEND_URL", "")
+    origins = [o for o in (_normalize_origin(x) for x in raw.split(",")) if o]
+    if origins:
+        return {"allow_origins": origins, "allow_origin_regex": None}
+    return {"allow_origins": [], "allow_origin_regex": ".*"}
+
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[frontend_origin],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    **_cors_config(),
 )
