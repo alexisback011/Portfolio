@@ -1,0 +1,239 @@
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { motion } from "framer-motion";
+import { Star, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { API } from "../../lib/api";
+
+const EASE = [0.85, 0, 0.15, 1];
+
+const Stars = ({ value, size = 14 }) => (
+  <div className="flex items-center gap-0.5" aria-label={`${value} out of 5 stars`}>
+    {[1, 2, 3, 4, 5].map((n) => (
+      <Star
+        key={n}
+        size={size}
+        className={
+          n <= value ? "fill-secondary text-secondary" : "fill-transparent text-white/25"
+        }
+      />
+    ))}
+  </div>
+);
+
+export const Reviews = () => {
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState({ name: "", rating: 5, comment: "" });
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await axios.get(`${API}/review`);
+        if (!cancelled) setReviews(data);
+      } catch {
+        if (!cancelled) setReviews([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const onChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.comment.trim()) {
+      toast.error("Please add your name and a comment.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { data } = await axios.post(`${API}/review`, {
+        name: form.name,
+        rating: form.rating,
+        comment: form.comment,
+      });
+      setReviews((prev) => [data, ...prev]);
+      setForm({ name: "", rating: 5, comment: "" });
+      toast.success("Review posted. Thanks for the feedback!");
+    } catch {
+      toast.error("Something went wrong. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const average =
+    reviews.length > 0
+      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+      : null;
+
+  return (
+    <section
+      id="reviews"
+      data-testid="reviews-section"
+      className="relative py-24 md:py-32 px-6 md:px-10 border-t border-white/10"
+    >
+      <div className="mx-auto max-w-[1600px]">
+        <div className="flex items-center gap-4 mb-16">
+          <span className="text-xs font-bold uppercase tracking-[0.3em] text-secondary">
+            [ REVIEWS ]
+          </span>
+          <span className="h-px flex-1 bg-white/15" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-16">
+          <div className="md:col-span-5">
+            <motion.h2
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, ease: EASE }}
+              className="font-display font-black uppercase tracking-tighter leading-[0.85] text-5xl md:text-7xl"
+            >
+              Word
+              <br />
+              <span className="text-stroke-primary">on the</span>
+              <br />
+              street.
+            </motion.h2>
+
+            {average && (
+              <div className="mt-10 flex items-center gap-4">
+                <span className="font-display text-6xl font-black leading-none">
+                  {average}
+                </span>
+                <div className="space-y-1">
+                  <Stars value={Math.round(average)} size={18} />
+                  <span className="block text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                    {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <form
+            onSubmit={onSubmit}
+            data-testid="review-form"
+            className="md:col-span-6 md:col-start-7 flex flex-col gap-8"
+          >
+            <label className="block">
+              <span className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                01 / Your Name
+              </span>
+              <input
+                name="name"
+                value={form.name}
+                onChange={onChange}
+                placeholder=""
+                data-testid="review-name"
+                className="mt-3 w-full bg-transparent border-b-2 border-white/20 focus:border-primary outline-none py-3 text-base md:text-lg font-light transition-colors duration-200"
+              />
+            </label>
+
+            <div>
+              <span className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                02 / Rating
+              </span>
+              <div className="mt-3 flex items-center gap-2" data-testid="review-rating">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    aria-label={`${n} star${n > 1 ? "s" : ""}`}
+                    onClick={() => setForm((f) => ({ ...f, rating: n }))}
+                    className="transition-transform duration-150 hover:scale-125"
+                  >
+                    <Star
+                      size={28}
+                      className={
+                        n <= form.rating
+                          ? "fill-secondary text-secondary"
+                          : "fill-transparent text-white/25"
+                      }
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <label className="block">
+              <span className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                03 / Comment
+              </span>
+              <textarea
+                name="comment"
+                value={form.comment}
+                onChange={onChange}
+                rows={4}
+                placeholder="What did you think?"
+                data-testid="review-comment"
+                className="mt-3 w-full bg-transparent border-b-2 border-white/20 focus:border-primary outline-none py-3 text-base md:text-lg font-light resize-none transition-colors duration-200"
+              />
+            </label>
+
+            <button
+              type="submit"
+              disabled={submitting}
+              data-testid="review-submit"
+              className="group inline-flex items-center justify-center gap-3 bg-primary text-black px-8 py-5 text-xs font-bold uppercase tracking-[0.25em] hover:bg-secondary disabled:opacity-60 transition-colors duration-200"
+            >
+              {submitting ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                "Post Review"
+              )}
+            </button>
+          </form>
+        </div>
+
+        <div
+          className="mt-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          data-testid="reviews-list"
+        >
+          {loading ? (
+            <p className="text-sm text-muted-foreground font-light">
+              Loading reviews...
+            </p>
+          ) : reviews.length === 0 ? (
+            <p className="text-sm text-muted-foreground font-light">
+              No reviews yet. Be the first to leave one.
+            </p>
+          ) : (
+            reviews.map((r, i) => (
+              <motion.div
+                key={r.id}
+                data-testid={`review-${r.id}`}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, ease: EASE, delay: (i % 3) * 0.06 }}
+                className="border border-white/15 p-6 hover:border-primary transition-colors flex flex-col gap-4"
+              >
+                <div className="flex items-center justify-between">
+                  <Stars value={r.rating} />
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(r.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                <p className="flex-1 text-sm font-light text-muted-foreground leading-relaxed">
+                  "{r.comment}"
+                </p>
+                <span className="font-display font-bold uppercase tracking-tight text-sm">
+                  — {r.name}
+                </span>
+              </motion.div>
+            ))
+          )}
+        </div>
+      </div>
+    </section>
+  );
+};

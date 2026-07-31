@@ -137,3 +137,50 @@ class TestContact:
         # deleting again -> 404
         r = admin_client.delete(f"{BASE_URL}/api/contact/{created['id']}")
         assert r.status_code == 404
+
+
+# ---------- Review tests ----------
+class TestReview:
+    def test_review_post_and_list_public(self):
+        payload = {"name": "TEST Fan", "rating": 5,
+                   "comment": f"love the work {uuid.uuid4().hex[:6]}"}
+        r = requests.post(f"{BASE_URL}/api/review", json=payload)
+        assert r.status_code == 200, r.text
+        created = r.json()
+        assert created["comment"] == payload["comment"]
+        assert created["rating"] == 5
+        assert "id" in created
+
+        r = requests.get(f"{BASE_URL}/api/review")
+        assert r.status_code == 200
+        items = r.json()
+        assert isinstance(items, list)
+        assert any(m["id"] == created["id"] for m in items)
+
+    def test_review_validation(self):
+        r = requests.post(f"{BASE_URL}/api/review",
+                          json={"name": "", "rating": 0, "comment": ""})
+        assert r.status_code == 422
+        r = requests.post(f"{BASE_URL}/api/review",
+                          json={"name": "x", "rating": 6, "comment": "ok"})
+        assert r.status_code == 422
+
+    def test_review_delete_admin_only(self, admin_client):
+        payload = {"name": "DELETE REVIEW", "rating": 1, "comment": "remove me"}
+        created = requests.post(f"{BASE_URL}/api/review", json=payload).json()
+
+        # unauth delete -> 401
+        r = requests.delete(f"{BASE_URL}/api/review/{created['id']}")
+        assert r.status_code == 401
+
+        # admin delete -> 200
+        r = admin_client.delete(f"{BASE_URL}/api/review/{created['id']}")
+        assert r.status_code == 200, r.text
+
+        # gone from list
+        r = requests.get(f"{BASE_URL}/api/review")
+        assert all(m["id"] != created["id"] for m in r.json())
+
+        # deleting again -> 404
+        r = admin_client.delete(f"{BASE_URL}/api/review/{created['id']}")
+        assert r.status_code == 404

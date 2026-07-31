@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { LogOut, Mail, Home, Trash2 } from "lucide-react";
+import { LogOut, Mail, Home, Trash2, Star } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
 import { PROFILE } from "../data";
@@ -15,6 +15,8 @@ const Profile = () => {
   const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [loadingMsgs, setLoadingMsgs] = useState(true);
+  const [reviews, setReviews] = useState([]);
+  const [loadingReviews, setLoadingReviews] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) navigate("/login");
@@ -53,6 +55,33 @@ const Profile = () => {
       toast.success("Message deleted.");
     } catch {
       toast.error("Could not delete message.");
+    }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await axios.get(`${API}/review`, { withCredentials: true });
+        if (!cancelled) setReviews(data);
+      } catch {
+        if (!cancelled) setReviews([]);
+      } finally {
+        if (!cancelled) setLoadingReviews(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const onDeleteReview = async (id) => {
+    try {
+      await axios.delete(`${API}/review/${id}`, { withCredentials: true });
+      setReviews((prev) => prev.filter((r) => r.id !== id));
+      toast.success("Review deleted.");
+    } catch {
+      toast.error("Could not delete review.");
     }
   };
 
@@ -147,6 +176,55 @@ const Profile = () => {
                 </a>
                 <p className="mt-4 text-sm font-light text-muted-foreground leading-relaxed">
                   {m.message}
+                </p>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="mt-20 flex items-center gap-3">
+          <Star size={16} className="text-primary" />
+          <span className="text-xs font-bold uppercase tracking-[0.3em]">Reviews</span>
+          <span className="h-px flex-1 bg-white/15" />
+          <span className="text-xs font-bold text-muted-foreground">{reviews.length}</span>
+        </div>
+
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="reviews-inbox">
+          {loadingReviews ? (
+            <p className="text-sm text-muted-foreground font-light">Loading...</p>
+          ) : reviews.length === 0 ? (
+            <p className="text-sm text-muted-foreground font-light">
+              No reviews yet. Viewer comments appear here.
+            </p>
+          ) : (
+            reviews.map((r) => (
+              <div
+                key={r.id}
+                data-testid={`admin-review-${r.id}`}
+                className="border border-white/15 p-6 hover:border-primary transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-display font-bold uppercase tracking-tight">{r.name}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Star size={12} className="fill-secondary text-secondary" />
+                      {r.rating}/5
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(r.created_at).toLocaleDateString()}
+                    </span>
+                    <button
+                      data-testid={`delete-review-${r.id}`}
+                      onClick={() => onDeleteReview(r.id)}
+                      aria-label={`Delete review from ${r.name}`}
+                      className="text-muted-foreground hover:text-red-400 transition-colors"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+                <p className="mt-4 text-sm font-light text-muted-foreground leading-relaxed">
+                  {r.comment}
                 </p>
               </div>
             ))

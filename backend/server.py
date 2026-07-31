@@ -72,6 +72,17 @@ class ContactMessage(Base):
     )
 
 
+class Review(Base):
+    __tablename__ = "reviews"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name: Mapped[str] = mapped_column(String(80), nullable=False)
+    rating: Mapped[int] = mapped_column(Integer, nullable=False)
+    comment: Mapped[str] = mapped_column(String(1000), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
+
+
 JWT_ALGORITHM = "HS256"
 IS_DEV = (
     os.environ.get("APP_ENV", "development") == "development"
@@ -188,6 +199,21 @@ class ContactOut(BaseModel):
     name: str
     email: str
     message: str
+    created_at: datetime
+
+
+class ReviewCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=80)
+    rating: int = Field(..., ge=1, le=5)
+    comment: str = Field(..., min_length=1, max_length=1000)
+
+
+class ReviewOut(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    name: str
+    rating: int
+    comment: str
     created_at: datetime
 
 
@@ -319,6 +345,34 @@ async def delete_contact(message_id: str, admin=Depends(require_admin), db: Asyn
     await db.delete(msg)
     await db.commit()
     return {"message": "Message deleted"}
+
+
+@api_router.post("/review", response_model=ReviewOut)
+async def create_review(input: ReviewCreate, db: AsyncSession = Depends(get_db)):
+    review = Review(name=input.name.strip(), rating=input.rating, comment=input.comment.strip())
+    db.add(review)
+    await db.commit()
+    await db.refresh(review)
+    return {"id": review.id, "name": review.name, "rating": review.rating,
+            "comment": review.comment, "created_at": review.created_at}
+
+
+@api_router.get("/review", response_model=List[ReviewOut])
+async def list_reviews(db: AsyncSession = Depends(get_db)):
+    stmt = select(Review).order_by(Review.created_at.desc()).limit(200)
+    rows = (await db.scalars(stmt)).all()
+    return [{"id": r.id, "name": r.name, "rating": r.rating,
+             "comment": r.comment, "created_at": r.created_at} for r in rows]
+
+
+@api_router.delete("/review/{review_id}")
+async def delete_review(review_id: str, admin=Depends(require_admin), db: AsyncSession = Depends(get_db)):
+    review = await db.get(Review, review_id)
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    await db.delete(review)
+    await db.commit()
+    return {"message": "Review deleted"}
 
 
 app.include_router(api_router)
