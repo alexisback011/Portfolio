@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { LogOut, Mail, Home } from "lucide-react";
+import { LogOut, Mail, Home, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
 import { PROFILE } from "../data";
@@ -44,6 +44,16 @@ const Profile = () => {
     await logout();
     toast.success("Signed out.");
     navigate("/");
+  };
+
+  const onDelete = async (id) => {
+    try {
+      await axios.delete(`${API}/contact/${id}`, { withCredentials: true });
+      setMessages((prev) => prev.filter((m) => m.id !== id));
+      toast.success("Message deleted.");
+    } catch {
+      toast.error("Could not delete message.");
+    }
   };
 
   if (loading) return null;
@@ -115,9 +125,19 @@ const Profile = () => {
               >
                 <div className="flex items-center justify-between">
                   <span className="font-display font-bold uppercase tracking-tight">{m.name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(m.created_at).toLocaleDateString()}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(m.created_at).toLocaleDateString()}
+                    </span>
+                    <button
+                      data-testid={`delete-${m.id}`}
+                      onClick={() => onDelete(m.id)}
+                      aria-label={`Delete message from ${m.name}`}
+                      className="text-muted-foreground hover:text-red-400 transition-colors"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
                 </div>
                 <a
                   href={`mailto:${m.email}`}

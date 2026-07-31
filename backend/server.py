@@ -311,6 +311,16 @@ async def list_contacts(admin=Depends(require_admin), db: AsyncSession = Depends
              "message": m.message, "created_at": m.created_at} for m in rows]
 
 
+@api_router.delete("/contact/{message_id}")
+async def delete_contact(message_id: str, admin=Depends(require_admin), db: AsyncSession = Depends(get_db)):
+    msg = await db.get(ContactMessage, message_id)
+    if not msg:
+        raise HTTPException(status_code=404, detail="Message not found")
+    await db.delete(msg)
+    await db.commit()
+    return {"message": "Message deleted"}
+
+
 app.include_router(api_router)
 
 app.add_middleware(

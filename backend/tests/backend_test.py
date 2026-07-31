@@ -115,3 +115,25 @@ class TestContact:
         r = requests.post(f"{BASE_URL}/api/contact",
                           json={"name": "", "email": "bad", "message": ""})
         assert r.status_code == 422
+
+    def test_contact_delete_admin_only(self, admin_client):
+        payload = {"name": "DELETE ME", "email": "delete@test.dev",
+                   "message": f"to be deleted {uuid.uuid4().hex[:6]}"}
+        created = requests.post(f"{BASE_URL}/api/contact", json=payload).json()
+
+        # unauth delete -> 401
+        r = requests.delete(f"{BASE_URL}/api/contact/{created['id']}")
+        assert r.status_code == 401
+
+        # admin delete -> 200
+        r = admin_client.delete(f"{BASE_URL}/api/contact/{created['id']}")
+        assert r.status_code == 200, r.text
+
+        # gone from list
+        r = admin_client.get(f"{BASE_URL}/api/contact")
+        assert r.status_code == 200
+        assert all(m["id"] != created["id"] for m in r.json())
+
+        # deleting again -> 404
+        r = admin_client.delete(f"{BASE_URL}/api/contact/{created['id']}")
+        assert r.status_code == 404
