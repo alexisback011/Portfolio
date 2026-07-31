@@ -206,9 +206,18 @@ const Profile = () => {
                 <div className="flex items-center justify-between">
                   <span className="font-display font-bold uppercase tracking-tight">{r.name}</span>
                   <div className="flex items-center gap-3">
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Star size={12} className="fill-secondary text-secondary" />
-                      {r.rating}/5
+                    <span className="flex items-center gap-0.5">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <Star
+                          key={n}
+                          size={12}
+                          className={
+                            n <= r.rating
+                              ? "fill-secondary text-secondary"
+                              : "fill-transparent text-white/25"
+                          }
+                        />
+                      ))}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {new Date(r.created_at).toLocaleDateString()}
