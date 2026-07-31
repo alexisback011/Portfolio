@@ -15,7 +15,7 @@ import bcrypt
 import jwt
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
-from sqlalchemy import String, Integer, DateTime, select, text
+from sqlalchemy import String, Integer, Boolean, DateTime, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -56,6 +56,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="user")
+    is_banned: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     profile_image: Mapped[str | None] = mapped_column(String(2000), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
@@ -202,6 +203,11 @@ async def init_db():
             await conn.execute(text("ALTER TABLE users ADD COLUMN profile_image VARCHAR(2000)"))
     except Exception:
         pass
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN is_banned BOOLEAN DEFAULT 0"))
+    except Exception:
+        pass
     admin_email = os.environ.get("ADMIN_EMAIL", "").strip().lower()
     admin_password = os.environ.get("ADMIN_PASSWORD", "")
     if not admin_email or not admin_password:
@@ -266,6 +272,7 @@ class UserOut(BaseModel):
     name: str
     email: str
     role: str = "user"
+    is_banned: bool = False
     profile_image: str | None = None
 
 
@@ -275,6 +282,7 @@ class AuthOut(BaseModel):
     name: str
     email: str
     role: str = "user"
+    is_banned: bool = False
     profile_image: str | None = None
     access_token: str
     refresh_token: str
@@ -326,6 +334,7 @@ class AdminUserOut(BaseModel):
     name: str
     email: str
     role: str
+    is_banned: bool
     profile_image: str | None
     password_hash: str
     created_at: datetime
@@ -336,7 +345,7 @@ class AdminUserOut(BaseModel):
 
 def user_public(user: User) -> dict:
     return {"id": str(user.id), "name": user.name, "email": user.email, "role": user.role,
-            "profile_image": user.profile_image}
+            "is_banned": user.is_banned, "profile_image": user.profile_image}
 
 
 async def get_current_user(request: Request, db: AsyncSession = Depends(get_db)) -> dict:
@@ -354,6 +363,8 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
         user = await db.get(User, int(payload["sub"]))
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
+        if user.is_banned:
+            raise HTTPException(status_code=403, detail="Account is banned")
         return user_public(user)
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
@@ -405,6 +416,8 @@ async def login(input: LoginInput, request: Request, response: Response,
     user = await db.scalar(select(User).where(User.email == email))
     if not user or not verify_password(input.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    if user.is_banned:
+        raise HTTPException(status_code=403, detail="Account is banned")
     uid = str(user.id)
     access = create_access_token(uid, email)
     refresh = create_refresh_token(uid)
@@ -452,6 +465,8 @@ async def refresh(request: Request, response: Response, db: AsyncSession = Depen
         user = await db.get(User, int(payload["sub"]))
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
+        if user.is_banned:
+            raise HTTPException(status_code=403, detail="Account is banned")
         access = create_access_token(str(user.id), user.email)
         response.set_cookie("access_token", access, httponly=True, secure=not IS_DEV,
                             samesite="lax" if IS_DEV else "none", max_age=900, path="/")
@@ -470,6 +485,8 @@ async def refresh_token(input: RefreshInput, db: AsyncSession = Depends(get_db))
         user = await db.get(User, int(payload["sub"]))
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
+        if user.is_banned:
+            raise HTTPException(status_code=403, detail="Account is banned")
         access = create_access_token(str(user.id), user.email)
         return {"access_token": access}
     except jwt.ExpiredSignatureError:
@@ -534,35 +551,61 @@ async def delete_review(review_id: str, admin=Depends(require_admin), db: AsyncS
     return {"message": "Review deleted"}
 
 
+async def build_admin_user(db: AsyncSession, u: User) -> dict:
+    records = (await db.scalars(
+        select(LoginRecord)
+        .where(LoginRecord.user_id == u.id)
+        .order_by(LoginRecord.created_at.desc())
+        .limit(100)
+    )).all()
+    return {
+        "id": str(u.id),
+        "name": u.name,
+        "email": u.email,
+        "role": u.role,
+        "is_banned": u.is_banned,
+        "profile_image": u.profile_image,
+        "password_hash": u.password_hash,
+        "created_at": u.created_at,
+        "login_count": len(records),
+        "last_login": records[0].created_at if records else None,
+        "logins": [
+            {"id": r.id, "email": r.email, "ip_address": r.ip_address,
+             "user_agent": r.user_agent, "device": r.device, "created_at": r.created_at}
+            for r in records
+        ],
+    }
+
+
 @api_router.get("/admin/users", response_model=List[AdminUserOut])
 async def list_users(admin=Depends(require_admin), db: AsyncSession = Depends(get_db)):
     stmt = select(User).order_by(User.created_at.desc())
     users = (await db.scalars(stmt)).all()
-    result = []
-    for u in users:
-        records = (await db.scalars(
-            select(LoginRecord)
-            .where(LoginRecord.user_id == u.id)
-            .order_by(LoginRecord.created_at.desc())
-            .limit(100)
-        )).all()
-        result.append({
-            "id": str(u.id),
-            "name": u.name,
-            "email": u.email,
-            "role": u.role,
-            "profile_image": u.profile_image,
-            "password_hash": u.password_hash,
-            "created_at": u.created_at,
-            "login_count": len(records),
-            "last_login": records[0].created_at if records else None,
-            "logins": [
-                {"id": r.id, "email": r.email, "ip_address": r.ip_address,
-                 "user_agent": r.user_agent, "device": r.device, "created_at": r.created_at}
-                for r in records
-            ],
-        })
-    return result
+    return [await build_admin_user(db, u) for u in users]
+
+
+@api_router.patch("/admin/users/{user_id}/ban", response_model=AdminUserOut)
+async def ban_user(user_id: int, admin=Depends(require_admin), db: AsyncSession = Depends(get_db)):
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.role == "admin":
+        raise HTTPException(status_code=400, detail="Cannot ban an admin")
+    user.is_banned = True
+    await db.commit()
+    await db.refresh(user)
+    return await build_admin_user(db, user)
+
+
+@api_router.patch("/admin/users/{user_id}/unban", response_model=AdminUserOut)
+async def unban_user(user_id: int, admin=Depends(require_admin), db: AsyncSession = Depends(get_db)):
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.is_banned = False
+    await db.commit()
+    await db.refresh(user)
+    return await build_admin_user(db, user)
 
 
 app.include_router(api_router)

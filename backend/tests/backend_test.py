@@ -133,6 +133,72 @@ class TestAdminUsers:
         assert rec["user_agent"]
         assert rec["device"]
 
+# ---------- Admin ban / moderation tests ----------
+class TestAdminBan:
+    def _register_user(self):
+        email = f"BAN_{uuid.uuid4().hex[:8]}@test.dev"
+        session = requests.Session()
+        r = session.post(f"{BASE_URL}/api/auth/register",
+                         json={"name": "BAN ME", "email": email, "password": "pass1234"})
+        assert r.status_code == 200
+        return session, r.json()
+
+    def test_ban_requires_admin(self):
+        session, reg = self._register_user()
+        r = session.patch(f"{BASE_URL}/api/admin/users/{reg['id']}/ban")
+        assert r.status_code == 403
+
+    def test_ban_unban_flow(self, admin_client):
+        session, reg = self._register_user()
+        uid = reg["id"]
+        email = reg["email"]
+
+        # ban
+        r = admin_client.patch(f"{BASE_URL}/api/admin/users/{uid}/ban")
+        assert r.status_code == 200, r.text
+        assert r.json()["is_banned"] is True
+
+        # banned user cannot log in
+        fresh = requests.Session()
+        r = fresh.post(f"{BASE_URL}/api/auth/login",
+                       json={"email": email, "password": "pass1234"})
+        assert r.status_code == 403
+        assert "banned" in r.json()["detail"].lower()
+
+        # existing session is revoked too
+        r = session.get(f"{BASE_URL}/api/auth/me")
+        assert r.status_code == 403
+
+        # banned user cannot refresh token
+        r = requests.post(f"{BASE_URL}/api/auth/refresh-token",
+                          json={"refresh_token": reg["refresh_token"]})
+        assert r.status_code == 403
+
+        # admin users list reflects the ban
+        r = admin_client.get(f"{BASE_URL}/api/admin/users")
+        profile = next(u for u in r.json() if u["id"] == uid)
+        assert profile["is_banned"] is True
+
+        # unban restores access
+        r = admin_client.patch(f"{BASE_URL}/api/admin/users/{uid}/unban")
+        assert r.status_code == 200, r.text
+        assert r.json()["is_banned"] is False
+
+        fresh2 = requests.Session()
+        r = fresh2.post(f"{BASE_URL}/api/auth/login",
+                        json={"email": email, "password": "pass1234"})
+        assert r.status_code == 200
+
+    def test_cannot_ban_admin(self, admin_client):
+        r = admin_client.get(f"{BASE_URL}/api/admin/users")
+        admin = next(u for u in r.json() if u["role"] == "admin")
+        r = admin_client.patch(f"{BASE_URL}/api/admin/users/{admin['id']}/ban")
+        assert r.status_code == 400
+
+    def test_ban_missing_user_404(self, admin_client):
+        r = admin_client.patch(f"{BASE_URL}/api/admin/users/99999999/ban")
+        assert r.status_code == 404
+
     def test_login_invalid(self, client):
         r = client.post(f"{BASE_URL}/api/auth/login",
                         json={"email": ADMIN_EMAIL, "password": "wrongpass"})

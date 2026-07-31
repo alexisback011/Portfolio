@@ -2,9 +2,20 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { LogOut, Mail, Home, Trash2, Star, Camera, Users, Copy } from "lucide-react";
+import {
+  LogOut,
+  Mail,
+  Home,
+  Trash2,
+  Star,
+  Camera,
+  Users,
+  Copy,
+  Ban,
+  ShieldCheck,
+} from "lucide-react";
 import { toast } from "sonner";
-import { useAuth } from "../context/AuthContext";
+import { useAuth, formatApiErrorDetail } from "../context/AuthContext";
 import { PROFILE } from "../data";
 import { API } from "../lib/api";
 
@@ -113,6 +124,40 @@ const Profile = () => {
 
   const toggleUserLogins = (id) => {
     setExpandedUser((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const replaceUser = (updated) => {
+    setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
+  };
+
+  const onBanUser = async (u) => {
+    if (!window.confirm(`Ban ${u.name} (${u.email})? They will be locked out immediately.`)) return;
+    try {
+      const { data } = await axios.patch(
+        `${API}/admin/users/${u.id}/ban`,
+        {},
+        { withCredentials: true }
+      );
+      replaceUser(data);
+      toast.success(`${u.name} banned.`);
+    } catch (err) {
+      toast.error(formatApiErrorDetail(err.response?.data?.detail) || "Could not ban user.");
+    }
+  };
+
+  const onUnbanUser = async (u) => {
+    if (!window.confirm(`Unban ${u.name}? They will be able to log in again.`)) return;
+    try {
+      const { data } = await axios.patch(
+        `${API}/admin/users/${u.id}/unban`,
+        {},
+        { withCredentials: true }
+      );
+      replaceUser(data);
+      toast.success(`${u.name} unbanned.`);
+    } catch (err) {
+      toast.error(formatApiErrorDetail(err.response?.data?.detail) || "Could not unban user.");
+    }
   };
 
   const onLogout = async () => {
@@ -460,6 +505,11 @@ const Profile = () => {
                             >
                               {u.role}
                             </span>
+                            {u.is_banned && (
+                              <span className="border border-destructive/50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-destructive">
+                                Banned
+                              </span>
+                            )}
                           </div>
                           <a
                             href={`mailto:${u.email}`}
@@ -469,9 +519,32 @@ const Profile = () => {
                           </a>
                         </div>
                       </div>
-                      <span className="shrink-0 text-xs text-muted-foreground">
-                        {new Date(u.created_at).toLocaleDateString()}
-                      </span>
+                      <div className="flex flex-col items-end gap-2 shrink-0">
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(u.created_at).toLocaleDateString()}
+                        </span>
+                        {u.role === "admin" ? (
+                          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
+                            Protected
+                          </span>
+                        ) : u.is_banned ? (
+                          <button
+                            data-testid={`unban-${u.id}`}
+                            onClick={() => onUnbanUser(u)}
+                            className="inline-flex items-center gap-1.5 border border-white/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-secondary hover:border-secondary hover:text-foreground transition-colors"
+                          >
+                            <ShieldCheck size={12} /> Unban
+                          </button>
+                        ) : (
+                          <button
+                            data-testid={`ban-${u.id}`}
+                            onClick={() => onBanUser(u)}
+                            className="inline-flex items-center gap-1.5 border border-white/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground hover:border-destructive hover:text-destructive transition-colors"
+                          >
+                            <Ban size={12} /> Ban
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <div className="border-t border-white/10 px-6 py-4 space-y-2">
