@@ -222,6 +222,11 @@ OTP_TTL_MINUTES = 10
 OTP_MAX_ATTEMPTS = 5
 
 
+def is_admin_email(email: str) -> bool:
+    configured = os.environ.get("ADMIN_EMAIL", "").strip().lower()
+    return bool(configured) and email.lower() == configured
+
+
 def generate_otp() -> str:
     return f"{secrets.randbelow(1000000):06d}"
 
@@ -386,7 +391,7 @@ class RequestSignupOtpInput(BaseModel):
 
 class VerifySignupInput(BaseModel):
     email: EmailStr
-    otp: str = Field(..., min_length=6, max_length=6)
+    otp: str = Field(default="", max_length=6)
     name: str = Field(..., min_length=1, max_length=80)
     password: str = Field(..., min_length=6, max_length=128)
 
@@ -549,6 +554,9 @@ async def request_signup_otp(input: RequestSignupOtpInput, db: AsyncSession = De
     existing = await db.scalar(select(User).where(User.email == email))
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
+    if is_admin_email(email):
+        return {"message": "Admin accounts don't require email verification",
+                "email": email, "skip_otp": True}
     code = await issue_otp(db, email, "signup")
     subject = f"Verify your email — {SITE_NAME}"
     body = (f"Your verification code for {SITE_NAME} is:\n\n{code}\n\n"
@@ -567,7 +575,7 @@ async def request_signup_otp(input: RequestSignupOtpInput, db: AsyncSession = De
 async def verify_signup_otp(input: VerifySignupInput, request: Request, response: Response,
                             db: AsyncSession = Depends(get_db)):
     email = input.email.lower()
-    if not await verify_otp(db, email, "signup", input.otp):
+    if not is_admin_email(email) and not await verify_otp(db, email, "signup", input.otp):
         raise HTTPException(status_code=400, detail="Invalid or expired verification code")
     existing = await db.scalar(select(User).where(User.email == email))
     if existing:

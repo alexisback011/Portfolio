@@ -58,6 +58,12 @@ const Auth = () => {
     setLoading(true);
     try {
       const data = await requestSignupOtp(form.name.trim(), form.email.trim(), form.password);
+      if (data.skip_otp) {
+        await verifySignupOtp(form.name.trim(), form.email.trim(), form.password, "");
+        toast.success("Account created. Welcome!");
+        navigate("/profile");
+        return;
+      }
       if (data.dev_otp) toast.info(`Dev code: ${data.dev_otp}`);
       toast.success("Verification code sent to your email.");
       setStep("otp");
