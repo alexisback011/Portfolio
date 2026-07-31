@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowUpRight, Loader2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
@@ -8,9 +8,11 @@ import { PROFILE } from "../data";
 
 const EASE = [0.85, 0, 0.15, 1];
 
-const Signup = () => {
-  const { user, register } = useAuth();
+const Auth = () => {
+  const { user, login, register } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [mode, setMode] = useState(location.pathname === "/signup" ? "signup" : "login");
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -19,19 +21,30 @@ const Signup = () => {
     if (user && user.id) navigate("/profile");
   }, [user, navigate]);
 
+  const switchMode = (next) => {
+    setMode(next);
+    setError("");
+    setForm((f) => ({ ...f, password: "" }));
+  };
+
   const onChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
   const onSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (form.password.length < 6) {
+    if (mode === "signup" && form.password.length < 6) {
       setError("Password must be at least 6 characters.");
       return;
     }
     setLoading(true);
     try {
-      await register(form.name.trim(), form.email.trim(), form.password);
-      toast.success("Account created. Welcome!");
+      if (mode === "signup") {
+        await register(form.name.trim(), form.email.trim(), form.password);
+        toast.success("Account created. Welcome!");
+      } else {
+        await login(form.email.trim(), form.password);
+        toast.success("Welcome back.");
+      }
       navigate("/profile");
     } catch (err) {
       const msg = formatApiErrorDetail(err.response?.data?.detail) || err.message;
@@ -75,28 +88,51 @@ const Signup = () => {
             data-testid="auth-title"
             className="mt-6 font-display text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none"
           >
-            Sign Up
+            {mode === "signup" ? "Create Account" : "Sign In"}
           </h1>
           <p className="mt-3 text-sm font-light text-muted-foreground">
-            Join the community. Get your own profile.
+            {mode === "signup" ? "Join the community. Get your own profile." : "Access your space."}
           </p>
 
+          <div className="mt-8 flex gap-3">
+            {[
+              { key: "login", label: "Sign In" },
+              { key: "signup", label: "Sign Up" },
+            ].map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                data-testid={`auth-mode-${t.key}`}
+                onClick={() => switchMode(t.key)}
+                className={`border px-6 py-3 text-xs font-bold uppercase tracking-[0.2em] transition-colors ${
+                  mode === t.key
+                    ? "border-primary bg-primary text-black"
+                    : "border-white/20 text-muted-foreground hover:border-white/40 hover:text-foreground"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
           <form onSubmit={onSubmit} data-testid="auth-form" className="mt-10 flex flex-col gap-7">
-            <label className="block">
-              <span className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                Name
-              </span>
-              <input
-                type="text"
-                name="name"
-                value={form.name}
-                onChange={onChange}
-                placeholder="Your name"
-                data-testid="auth-name"
-                className={inputCls}
-                required
-              />
-            </label>
+            {mode === "signup" && (
+              <label className="block">
+                <span className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                  Name
+                </span>
+                <input
+                  type="text"
+                  name="name"
+                  value={form.name}
+                  onChange={onChange}
+                  placeholder="Your name"
+                  data-testid="auth-name"
+                  className={inputCls}
+                  required
+                />
+              </label>
+            )}
             <label className="block">
               <span className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
                 Email
@@ -121,7 +157,7 @@ const Signup = () => {
                 name="password"
                 value={form.password}
                 onChange={onChange}
-                placeholder="Minimum 6 characters"
+                placeholder={mode === "signup" ? "Minimum 6 characters" : "••••••••"}
                 data-testid="auth-password"
                 className={inputCls}
                 required
@@ -144,7 +180,7 @@ const Signup = () => {
                 <Loader2 size={16} className="animate-spin" />
               ) : (
                 <>
-                  Create Account
+                  {mode === "signup" ? "Create Account" : "Sign In"}
                   <ArrowUpRight size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-200" />
                 </>
               )}
@@ -152,14 +188,15 @@ const Signup = () => {
           </form>
 
           <p className="mt-8 text-sm font-light text-muted-foreground">
-            Already have an account?{" "}
-            <Link
-              to="/login"
-              data-testid="goto-login"
+            {mode === "signup" ? "Already have an account? " : "New here? "}
+            <button
+              type="button"
+              data-testid="auth-toggle"
+              onClick={() => switchMode(mode === "signup" ? "login" : "signup")}
               className="text-secondary hover:text-primary transition-colors"
             >
-              Sign in →
-            </Link>
+              {mode === "signup" ? "Sign in →" : "Create an account →"}
+            </button>
           </p>
         </motion.div>
       </div>
@@ -167,4 +204,4 @@ const Signup = () => {
   );
 };
 
-export default Signup;
+export default Auth;

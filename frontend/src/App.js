@@ -13,8 +13,7 @@ import { Skills } from "@/components/portfolio/Skills";
 import { Reviews } from "@/components/portfolio/Reviews";
 import { Contact } from "@/components/portfolio/Contact";
 import { Footer } from "@/components/portfolio/Footer";
-import Login from "@/pages/Login";
-import Signup from "@/pages/Signup";
+import Auth from "@/pages/Auth";
 import Profile from "@/pages/Profile";
 import { PROFILE } from "@/data";
 
@@ -81,8 +80,8 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
+          <Route path="/login" element={<Auth />} />
+          <Route path="/signup" element={<Auth />} />
           <Route path="/profile" element={<Profile />} />
         </Routes>
       </BrowserRouter>

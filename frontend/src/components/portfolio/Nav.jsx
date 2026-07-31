@@ -78,22 +78,13 @@ export const Nav = () => {
               {user.name}
             </Link>
           ) : (
-            <>
-              <Link
-                to="/login"
-                data-testid="nav-login"
-                className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors duration-200"
-              >
-                Sign In
-              </Link>
-              <Link
-                to="/signup"
-                data-testid="nav-signup"
-                className="text-xs font-bold uppercase tracking-[0.2em] text-secondary hover:text-primary transition-colors duration-200"
-              >
-                Sign Up
-              </Link>
-            </>
+            <Link
+              to="/login"
+              data-testid="nav-login"
+              className="text-xs font-bold uppercase tracking-[0.2em] text-secondary hover:text-primary transition-colors duration-200"
+            >
+              Sign In
+            </Link>
           )}
         </div>
 
@@ -143,24 +134,14 @@ export const Nav = () => {
                   {user.name}
                 </Link>
               ) : (
-                <>
-                  <Link
-                    to="/login"
-                    onClick={() => setOpen(false)}
-                    data-testid="mobile-login"
-                    className="text-sm font-bold uppercase tracking-[0.2em] text-foreground hover:text-primary transition-colors"
-                  >
-                    Sign In
-                  </Link>
-                  <Link
-                    to="/signup"
-                    onClick={() => setOpen(false)}
-                    data-testid="mobile-signup"
-                    className="text-sm font-bold uppercase tracking-[0.2em] text-secondary hover:text-primary transition-colors"
-                  >
-                    Sign Up
-                  </Link>
-                </>
+                <Link
+                  to="/login"
+                  onClick={() => setOpen(false)}
+                  data-testid="mobile-login"
+                  className="text-sm font-bold uppercase tracking-[0.2em] text-secondary hover:text-primary transition-colors"
+                >
+                  Sign In
+                </Link>
               )}
             </div>
           </motion.div>
