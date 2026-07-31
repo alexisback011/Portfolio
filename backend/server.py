@@ -212,6 +212,11 @@ async def root():
     return {"message": "Hello World"}
 
 
+@app.get("/")
+async def index():
+    return {"message": "Alex portfolio API", "docs": "/docs", "health": "/api/"}
+
+
 @api_router.post("/auth/register", response_model=UserOut)
 async def register(input: RegisterInput, response: Response, db: AsyncSession = Depends(get_db)):
     email = input.email.lower()
