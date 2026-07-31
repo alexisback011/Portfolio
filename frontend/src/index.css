@@ -110,6 +110,34 @@ code {
     100% { text-shadow: 2px 0 hsl(var(--secondary)), -2px 0 hsl(var(--primary)); }
 }
 
+/* Glitch effect for SVG icons (stars) */
+.star-glitch {
+    animation: starGlitch 2.8s steps(1, end) infinite;
+}
+.star-glitch:nth-child(even) {
+    animation-delay: 0.45s;
+}
+.star-glitch:nth-child(3n) {
+    animation-delay: 0.9s;
+}
+@keyframes starGlitch {
+    0%, 88%, 100% {
+        filter: none;
+    }
+    89% {
+        filter: drop-shadow(2px 0 hsl(var(--primary))) drop-shadow(-2px 0 hsl(var(--secondary)));
+    }
+    92% {
+        filter: drop-shadow(-2px 0 hsl(var(--primary))) drop-shadow(2px 0 hsl(var(--secondary)));
+    }
+    95% {
+        filter: drop-shadow(3px 0 hsl(var(--secondary))) drop-shadow(-2px 0 hsl(var(--primary)));
+    }
+    98% {
+        filter: drop-shadow(-1px 0 hsl(var(--primary))) drop-shadow(1px 0 hsl(var(--secondary)));
+    }
+}
+
 .reveal-mask {
     overflow: hidden;
     display: block;

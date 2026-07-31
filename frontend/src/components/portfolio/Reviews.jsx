@@ -19,9 +19,9 @@ const Stars = ({ value, size = 14 }) => (
       >
         <Star
           size={size}
-          className={
+          className={`star-glitch ${
             n <= value ? "fill-secondary text-secondary" : "fill-transparent text-white/25"
-          }
+          }`}
         />
       </motion.span>
     ))}
@@ -152,11 +152,11 @@ export const Reviews = () => {
                   >
                     <Star
                       size={28}
-                      className={
+                      className={`star-glitch ${
                         n <= form.rating
                           ? "fill-secondary text-secondary"
                           : "fill-transparent text-white/25"
-                      }
+                      }`}
                     />
                   </motion.button>
                 ))}
