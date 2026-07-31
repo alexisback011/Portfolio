@@ -15,7 +15,7 @@ import bcrypt
 import jwt
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
-from sqlalchemy import String, Integer, Boolean, DateTime, select, text
+from sqlalchemy import String, Integer, Boolean, DateTime, select, text, delete
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -645,6 +645,20 @@ async def unban_user(user_id: int, admin=Depends(require_admin), db: AsyncSessio
     await db.commit()
     await db.refresh(user)
     return await build_admin_user(db, user)
+
+
+@api_router.delete("/admin/users/{user_id}")
+async def delete_user(user_id: int, admin=Depends(require_admin), db: AsyncSession = Depends(get_db)):
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.role == "admin":
+        raise HTTPException(status_code=400, detail="Cannot delete an admin")
+    await db.execute(delete(LoginRecord).where(LoginRecord.user_id == user.id))
+    await db.execute(delete(Review).where(Review.user_id == user.id))
+    await db.delete(user)
+    await db.commit()
+    return {"message": "User deleted"}
 
 
 app.include_router(api_router)

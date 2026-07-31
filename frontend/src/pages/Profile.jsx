@@ -60,7 +60,7 @@ const Profile = () => {
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [expandedUser, setExpandedUser] = useState({});
-  const [tab, setTab] = useState("messages");
+  const [tab, setTab] = useState("profiles");
   const [uploading, setUploading] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [pForm, setPForm] = useState({
@@ -167,6 +167,22 @@ const Profile = () => {
       toast.success(`${u.name} unbanned.`);
     } catch (err) {
       toast.error(formatApiErrorDetail(err.response?.data?.detail) || "Could not unban user.");
+    }
+  };
+
+  const onDeleteUser = async (u) => {
+    if (
+      !window.confirm(
+        `Delete ${u.name} (${u.email}) permanently? Their reviews and login history will be removed too.`
+      )
+    )
+      return;
+    try {
+      await axios.delete(`${API}/admin/users/${u.id}`, { withCredentials: true });
+      setUsers((prev) => prev.filter((x) => x.id !== u.id));
+      toast.success(`${u.name} deleted.`);
+    } catch (err) {
+      toast.error(formatApiErrorDetail(err.response?.data?.detail) || "Could not delete user.");
     }
   };
 
@@ -464,9 +480,9 @@ const Profile = () => {
         {isAdmin && (
           <div className="mt-16 flex flex-wrap items-center gap-4">
             {[
+              { key: "profiles", label: "Profiles", icon: Users, count: users.length },
               { key: "messages", label: "Messages", icon: Mail, count: messages.length },
               { key: "reviews", label: "Reviews", icon: Star, count: reviews.length },
-              { key: "profiles", label: "Profiles", icon: Users, count: users.length },
             ].map((t) => (
               <button
                 key={t.key}
@@ -678,23 +694,34 @@ const Profile = () => {
                           <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
                             Protected
                           </span>
-                        ) : u.is_banned ? (
-                          <button
-                            data-testid={`unban-${u.id}`}
-                            onClick={() => onUnbanUser(u)}
-                            className="inline-flex items-center gap-1.5 border border-white/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-secondary hover:border-secondary hover:text-foreground transition-colors"
-                          >
-                            <ShieldCheck size={12} /> Unban
-                          </button>
                         ) : (
                           <button
-                            data-testid={`ban-${u.id}`}
-                            onClick={() => onBanUser(u)}
-                            className="inline-flex items-center gap-1.5 border border-white/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground hover:border-destructive hover:text-destructive transition-colors"
+                            data-testid={`delete-user-${u.id}`}
+                            onClick={() => onDeleteUser(u)}
+                            aria-label={`Delete ${u.name}`}
+                            className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-destructive transition-colors"
                           >
-                            <Ban size={12} /> Ban
+                            <Trash2 size={13} /> Delete
                           </button>
                         )}
+                        {u.role !== "admin" &&
+                          (u.is_banned ? (
+                            <button
+                              data-testid={`unban-${u.id}`}
+                              onClick={() => onUnbanUser(u)}
+                              className="inline-flex items-center gap-1.5 border border-white/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-secondary hover:border-secondary hover:text-foreground transition-colors"
+                            >
+                              <ShieldCheck size={12} /> Unban
+                            </button>
+                          ) : (
+                            <button
+                              data-testid={`ban-${u.id}`}
+                              onClick={() => onBanUser(u)}
+                              className="inline-flex items-center gap-1.5 border border-white/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground hover:border-destructive hover:text-destructive transition-colors"
+                            >
+                              <Ban size={12} /> Ban
+                            </button>
+                          ))}
                       </div>
                     </div>
 

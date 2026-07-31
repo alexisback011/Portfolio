@@ -246,6 +246,32 @@ class TestAdminBan:
         r = admin_client.patch(f"{BASE_URL}/api/admin/users/99999999/ban")
         assert r.status_code == 404
 
+    def test_delete_user(self, client, admin_client):
+        session, reg = self._register_user()
+        uid = reg["id"]
+
+        # delete requires admin
+        r = session.delete(f"{BASE_URL}/api/admin/users/{uid}")
+        assert r.status_code == 403
+
+        # admin deletes
+        r = admin_client.delete(f"{BASE_URL}/api/admin/users/{uid}")
+        assert r.status_code == 200, r.text
+
+        # gone from list
+        r = admin_client.get(f"{BASE_URL}/api/admin/users")
+        assert all(u["id"] != uid for u in r.json())
+
+        # deleting again -> 404
+        r = admin_client.delete(f"{BASE_URL}/api/admin/users/{uid}")
+        assert r.status_code == 404
+
+    def test_cannot_delete_admin(self, admin_client):
+        r = admin_client.get(f"{BASE_URL}/api/admin/users")
+        admin = next(u for u in r.json() if u["role"] == "admin")
+        r = admin_client.delete(f"{BASE_URL}/api/admin/users/{admin['id']}")
+        assert r.status_code == 400
+
     def test_login_invalid(self, client):
         r = client.post(f"{BASE_URL}/api/auth/login",
                         json={"email": ADMIN_EMAIL, "password": "wrongpass"})
