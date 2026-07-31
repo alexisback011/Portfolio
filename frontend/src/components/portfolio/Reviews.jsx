@@ -115,7 +115,7 @@ export const Reviews = () => {
                 transition={{ duration: 0.6, ease: EASE, delay: 0.2 }}
                 className="mt-8 inline-flex items-center gap-5 border border-white/20 px-6 py-4 hover:border-primary transition-colors"
               >
-                <span className="glitch-number font-display text-5xl md:text-6xl font-black leading-none">
+                <span className="glitch-number font-display text-5xl md:text-6xl font-medium leading-none">
                   {reviews.length}
                   <span className="count-cursor">_</span>
                 </span>
