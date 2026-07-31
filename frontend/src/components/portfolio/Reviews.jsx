@@ -20,8 +20,9 @@ const Stars = ({ value, size = 14 }) => (
       >
         <Star
           size={size}
+          strokeWidth={n <= value ? 1.5 : 1}
           className={`star-glitch ${
-            n <= value ? "fill-primary text-primary" : "fill-transparent text-white/25"
+            n <= value ? "text-primary" : "text-white/25"
           }`}
         />
       </motion.span>
@@ -171,10 +172,11 @@ export const Reviews = () => {
                   >
                     <Star
                       size={28}
+                      strokeWidth={n <= form.rating ? 1.5 : 1}
                       className={`star-glitch ${
                         n <= form.rating
-                          ? "fill-primary text-primary"
-                          : "fill-transparent text-white/25"
+                          ? "text-primary"
+                          : "text-white/25"
                       }`}
                     />
                   </motion.button>

@@ -222,10 +222,11 @@ const Profile = () => {
                         >
                           <Star
                             size={12}
+                            strokeWidth={n <= r.rating ? 1.5 : 1}
                             className={`star-glitch ${
                               n <= r.rating
-                                ? "fill-primary text-primary"
-                                : "fill-transparent text-white/25"
+                                ? "text-primary"
+                                : "text-white/25"
                             }`}
                           />
                         </motion.span>
