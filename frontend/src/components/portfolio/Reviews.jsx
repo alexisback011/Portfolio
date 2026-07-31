@@ -78,24 +78,24 @@ export const Reviews = () => {
     <section
       id="reviews"
       data-testid="reviews-section"
-      className="relative py-24 md:py-32 px-6 md:px-10 border-t border-white/10"
+      className="relative py-16 md:py-24 px-6 md:px-10 border-t border-white/10"
     >
       <div className="mx-auto max-w-[1600px]">
-        <div className="flex items-center gap-4 mb-16">
+        <div className="flex items-center gap-4 mb-10">
           <span className="text-xs font-bold uppercase tracking-[0.3em] text-secondary">
             [ REVIEWS ]
           </span>
           <span className="h-px flex-1 bg-white/15" />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-16">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
           <div className="md:col-span-5">
             <motion.h2
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.8, ease: EASE }}
-              className="font-display font-black uppercase tracking-tighter leading-[0.85] text-5xl md:text-7xl"
+              className="font-display font-black uppercase tracking-tighter leading-[0.85] text-4xl md:text-5xl"
             >
               Word
               <br />
@@ -105,12 +105,12 @@ export const Reviews = () => {
             </motion.h2>
 
             {average && (
-              <div className="mt-10 flex items-center gap-4">
-                <span className="font-display text-6xl font-black leading-none">
+              <div className="mt-6 flex items-center gap-4">
+                <span className="font-display text-4xl font-black leading-none">
                   {average}
                 </span>
                 <div className="space-y-1">
-                  <Stars value={Math.round(average)} size={18} />
+                  <Stars value={Math.round(average)} size={16} />
                   <span className="block text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
                     {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
                   </span>
@@ -122,7 +122,7 @@ export const Reviews = () => {
           <form
             onSubmit={onSubmit}
             data-testid="review-form"
-            className="md:col-span-6 md:col-start-7 flex flex-col gap-8"
+            className="md:col-span-6 md:col-start-7 flex flex-col gap-6"
           >
             <label className="block">
               <span className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
@@ -172,7 +172,7 @@ export const Reviews = () => {
                 name="comment"
                 value={form.comment}
                 onChange={onChange}
-                rows={4}
+                rows={3}
                 placeholder="What did you think?"
                 data-testid="review-comment"
                 className="mt-3 w-full bg-transparent border-b-2 border-white/20 focus:border-primary outline-none py-3 text-base md:text-lg font-light resize-none transition-colors duration-200"
@@ -183,7 +183,7 @@ export const Reviews = () => {
               type="submit"
               disabled={submitting}
               data-testid="review-submit"
-              className="group inline-flex items-center justify-center gap-3 bg-primary text-black px-8 py-5 text-xs font-bold uppercase tracking-[0.25em] hover:bg-secondary disabled:opacity-60 transition-colors duration-200"
+              className="group inline-flex items-center justify-center gap-3 bg-primary text-black px-6 py-4 text-xs font-bold uppercase tracking-[0.25em] hover:bg-secondary disabled:opacity-60 transition-colors duration-200"
             >
               {submitting ? (
                 <Loader2 size={16} className="animate-spin" />
@@ -195,7 +195,7 @@ export const Reviews = () => {
         </div>
 
         <div
-          className="mt-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
           data-testid="reviews-list"
         >
           {loading ? (
@@ -215,7 +215,7 @@ export const Reviews = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, ease: EASE, delay: (i % 3) * 0.06 }}
-                className="border border-white/15 p-6 hover:border-primary transition-colors flex flex-col gap-4"
+                className="border border-white/15 p-5 hover:border-primary transition-colors flex flex-col gap-3"
               >
                 <div className="flex items-center justify-between">
                   <Stars value={r.rating} />
