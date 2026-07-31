@@ -57,14 +57,14 @@ netstat -ano | Select-String ":8000"
 
 ```powershell
 Set-Location frontend
-npm install
+yarn install
 Set-Location ..
 ```
 
 ### 4. Start frontend (detached)
 
 ```powershell
-Start-Process -FilePath "npm.cmd" -ArgumentList "start" -WorkingDirectory (Join-Path $PWD "frontend") -WindowStyle Hidden
+Start-Process -FilePath "yarn.cmd" -ArgumentList "start" -WorkingDirectory (Join-Path $PWD "frontend") -WindowStyle Hidden
 Start-Sleep -Seconds 20
 netstat -ano | Select-String ":3000"
 ```
@@ -120,7 +120,7 @@ For every host the same rules apply:
    `development`).
 6. Rebuild the frontend with the deployed API URL:
    `REACT_APP_BACKEND_URL=https://your-api.example.com` before running
-   `npm run build`, or set that env var in the frontend host.
+   `yarn build`, or set that env var in the frontend host.
 
 ### Render (easiest — one click for the whole app)
 

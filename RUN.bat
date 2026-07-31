@@ -30,10 +30,10 @@ netstat -ano | findstr :8000
 
 REM --- 4. Install frontend deps (if missing) ---
 cd /d "%~dp0frontend"
-if not exist "node_modules" call npm install
+if not exist "node_modules" call yarn.cmd install
 
 REM --- 5. Start frontend ---
-start /B "" npm start > "C:\Users\susna\AppData\Local\Temp\opencode\frontend.log" 2>&1
+start /B "" yarn.cmd start > "C:\Users\susna\AppData\Local\Temp\opencode\frontend.log" 2>&1
 timeout /t 20 >nul
 netstat -ano | findstr :3000
 
