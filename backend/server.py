@@ -73,7 +73,10 @@ class ContactMessage(Base):
 
 
 JWT_ALGORITHM = "HS256"
-IS_DEV = os.environ.get("APP_ENV", "development") == "development"
+IS_DEV = (
+    os.environ.get("APP_ENV", "development") == "development"
+    and os.environ.get("RENDER") != "true"
+)
 
 
 def hash_password(password: str) -> str:
