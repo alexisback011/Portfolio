@@ -115,8 +115,11 @@ async def get_db() -> AsyncIterator[AsyncSession]:
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    admin_email = os.environ.get("ADMIN_EMAIL", "admin@example.com").lower()
-    admin_password = os.environ.get("ADMIN_PASSWORD", "admin123")
+    admin_email = os.environ.get("ADMIN_EMAIL", "").strip().lower()
+    admin_password = os.environ.get("ADMIN_PASSWORD", "")
+    if not admin_email or not admin_password:
+        logger.info("ADMIN_EMAIL/ADMIN_PASSWORD not set; skipping admin seed")
+        return
     async with SessionLocal() as session:
         admin = await session.scalar(select(User).where(User.email == admin_email))
         if admin is None:
@@ -124,9 +127,17 @@ async def init_db():
                              password_hash=hash_password(admin_password), role="admin"))
             await session.commit()
             logger.info("Seeded admin user")
-        elif not verify_password(admin_password, admin.password_hash):
-            admin.password_hash = hash_password(admin_password)
-            await session.commit()
+        else:
+            changed = False
+            if not verify_password(admin_password, admin.password_hash):
+                admin.password_hash = hash_password(admin_password)
+                changed = True
+            if admin.role != "admin":
+                admin.role = "admin"
+                changed = True
+            if changed:
+                await session.commit()
+                logger.info("Updated admin user")
 
 
 @asynccontextmanager
