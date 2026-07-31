@@ -1,0 +1,48 @@
+services:
+  - type: web
+    name: alex-portfolio-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    pythonVersion: 3.11.0
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: alex-portfolio-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: alex-portfolio-frontend
+          property: host
+      - key: ADMIN_EMAIL
+        value: admin@alex.dev
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: APP_ENV
+        value: production
+
+  - type: web
+    name: alex-portfolio-frontend
+    runtime: static
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./build
+    pullRequestPreviewsEnabled: false
+    envVars:
+      - key: REACT_APP_BACKEND_URL
+        fromService:
+          type: web
+          name: alex-portfolio-api
+          property: host
+
+databases:
+  - name: alex-portfolio-db
+    plan: free
+    databaseType: postgres
