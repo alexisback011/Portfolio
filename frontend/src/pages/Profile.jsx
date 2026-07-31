@@ -210,7 +210,6 @@ const Profile = () => {
                       {[1, 2, 3, 4, 5].map((n) => (
                         <motion.span
                           key={n}
-                          className={n <= r.rating ? "star-glow" : ""}
                           initial={{ opacity: 0, scale: 0 }}
                           animate={{ opacity: 1, scale: 1 }}
                           transition={{
@@ -222,11 +221,11 @@ const Profile = () => {
                         >
                           <Star
                             size={12}
-                            strokeWidth={n <= r.rating ? 1.5 : 1}
+                            strokeWidth={n <= r.rating ? 2 : 1}
                             className={`star-glitch ${
                               n <= r.rating
-                                ? "text-primary"
-                                : "text-white/25"
+                                ? "fill-primary text-primary"
+                                : "fill-transparent text-white/25"
                             }`}
                           />
                         </motion.span>

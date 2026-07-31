@@ -110,12 +110,6 @@ code {
     100% { text-shadow: 2px 0 hsl(var(--secondary)), -2px 0 hsl(var(--primary)); }
 }
 
-/* Neon glow for filled stars */
-.star-glow {
-    filter: drop-shadow(0 0 7px hsl(var(--primary) / 0.65))
-        drop-shadow(0 0 2px hsl(var(--primary) / 0.8));
-}
-
 /* Aesthetic gradient count number with terminal cursor */
 .glitch-number {
     background: linear-gradient(
