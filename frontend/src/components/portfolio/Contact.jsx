@@ -49,9 +49,17 @@ export const Contact = () => {
     <section
       id="contact"
       data-testid="contact-section"
-      className="relative py-24 md:py-40 px-6 md:px-10 border-t border-white/10"
+      className="relative py-24 md:py-32 px-6 md:px-10 border-t border-white/10"
     >
-      <div className="mx-auto max-w-[1600px] grid grid-cols-1 md:grid-cols-12 gap-16">
+      <div className="mx-auto max-w-[1600px]">
+        <div className="flex items-center gap-4 mb-16">
+          <span className="text-xs font-bold uppercase tracking-[0.3em] text-secondary">
+            [ CONTACT ]
+          </span>
+          <span className="h-px flex-1 bg-white/15" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-16">
         <div className="md:col-span-5">
           <motion.h2
             initial={{ opacity: 0, y: 40 }}
@@ -151,6 +159,7 @@ export const Contact = () => {
             )}
           </button>
         </form>
+        </div>
       </div>
     </section>
   );
