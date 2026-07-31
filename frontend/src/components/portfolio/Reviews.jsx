@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
+import Marquee from "react-fast-marquee";
 import { Star, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { API } from "../../lib/api";
@@ -212,10 +213,7 @@ export const Reviews = () => {
           </form>
         </div>
 
-        <div
-          className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-          data-testid="reviews-list"
-        >
+        <div className="mt-12" data-testid="reviews-list">
           {loading ? (
             <p className="text-sm text-muted-foreground font-light">
               Loading reviews...
@@ -225,30 +223,28 @@ export const Reviews = () => {
               No reviews yet. Be the first to leave one.
             </p>
           ) : (
-            reviews.map((r, i) => (
-              <motion.div
-                key={r.id}
-                data-testid={`review-${r.id}`}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, ease: EASE, delay: (i % 3) * 0.06 }}
-                className="border border-white/15 p-5 hover:border-primary transition-colors flex flex-col gap-3"
-              >
-                <div className="flex items-center justify-between">
-                  <Stars value={r.rating} />
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(r.created_at).toLocaleDateString()}
+            <Marquee speed={35} gradient={false} pauseOnHover>
+              {reviews.map((r) => (
+                <div
+                  key={r.id}
+                  data-testid={`review-${r.id}`}
+                  className="mx-3 w-[300px] md:w-[340px] shrink-0 border border-white/15 p-5 hover:border-primary transition-colors flex flex-col gap-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <Stars value={r.rating} />
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(r.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <p className="flex-1 text-sm font-light text-muted-foreground leading-relaxed">
+                    "{r.comment}"
+                  </p>
+                  <span className="font-display font-bold uppercase tracking-tight text-sm">
+                    — {r.name}
                   </span>
                 </div>
-                <p className="flex-1 text-sm font-light text-muted-foreground leading-relaxed">
-                  "{r.comment}"
-                </p>
-                <span className="font-display font-bold uppercase tracking-tight text-sm">
-                  — {r.name}
-                </span>
-              </motion.div>
-            ))
+              ))}
+            </Marquee>
           )}
         </div>
       </div>
