@@ -37,6 +37,35 @@ class TestAuth:
         # httpOnly cookies set
         assert "access_token" in r.cookies
         assert "refresh_token" in r.cookies
+        # tokens in body (for native apps)
+        assert data["access_token"]
+        assert data["refresh_token"]
+
+    def test_refresh_token_endpoint(self, client):
+        # login via cookie path, take refresh token from body
+        r = client.post(f"{BASE_URL}/api/auth/login",
+                        json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD})
+        assert r.status_code == 200
+        refresh = r.json()["refresh_token"]
+        assert refresh
+
+        # use it to mint a new access token (no cookies)
+        r = requests.post(f"{BASE_URL}/api/auth/refresh-token",
+                          json={"refresh_token": refresh})
+        assert r.status_code == 200, r.text
+        new_access = r.json()["access_token"]
+        assert new_access
+
+        # new access token works
+        r = requests.get(f"{BASE_URL}/api/auth/me",
+                         headers={"Authorization": f"Bearer {new_access}"})
+        assert r.status_code == 200
+        assert r.json()["email"] == ADMIN_EMAIL
+
+    def test_refresh_token_invalid(self, client):
+        r = requests.post(f"{BASE_URL}/api/auth/refresh-token",
+                          json={"refresh_token": "garbage.token.value"})
+        assert r.status_code == 401
 
     def test_login_invalid(self, client):
         r = client.post(f"{BASE_URL}/api/auth/login",

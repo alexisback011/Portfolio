@@ -180,11 +180,25 @@ class LoginInput(BaseModel):
     password: str
 
 
+class RefreshInput(BaseModel):
+    refresh_token: str
+
+
 class UserOut(BaseModel):
     id: str
     name: str
     email: str
     role: str = "user"
+
+
+class AuthOut(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    name: str
+    email: str
+    role: str = "user"
+    access_token: str
+    refresh_token: str
 
 
 class ContactCreate(BaseModel):
@@ -259,7 +273,7 @@ async def index():
     return {"message": "Alex portfolio API", "docs": "/docs", "health": "/api/"}
 
 
-@api_router.post("/auth/register", response_model=UserOut)
+@api_router.post("/auth/register", response_model=AuthOut)
 async def register(input: RegisterInput, response: Response, db: AsyncSession = Depends(get_db)):
     email = input.email.lower()
     try:
@@ -272,19 +286,23 @@ async def register(input: RegisterInput, response: Response, db: AsyncSession = 
         await db.rollback()
         raise HTTPException(status_code=400, detail="Email already registered")
     uid = str(user.id)
-    set_auth_cookies(response, create_access_token(uid, email), create_refresh_token(uid))
-    return {"id": uid, "name": user.name, "email": email, "role": user.role}
+    access = create_access_token(uid, email)
+    refresh = create_refresh_token(uid)
+    set_auth_cookies(response, access, refresh)
+    return {**user_public(user), "access_token": access, "refresh_token": refresh}
 
 
-@api_router.post("/auth/login", response_model=UserOut)
+@api_router.post("/auth/login", response_model=AuthOut)
 async def login(input: LoginInput, response: Response, db: AsyncSession = Depends(get_db)):
     email = input.email.lower()
     user = await db.scalar(select(User).where(User.email == email))
     if not user or not verify_password(input.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     uid = str(user.id)
-    set_auth_cookies(response, create_access_token(uid, email), create_refresh_token(uid))
-    return user_public(user)
+    access = create_access_token(uid, email)
+    refresh = create_refresh_token(uid)
+    set_auth_cookies(response, access, refresh)
+    return {**user_public(user), "access_token": access, "refresh_token": refresh}
 
 
 @api_router.post("/auth/logout")
@@ -315,6 +333,24 @@ async def refresh(request: Request, response: Response, db: AsyncSession = Depen
         response.set_cookie("access_token", access, httponly=True, secure=not IS_DEV,
                             samesite="lax" if IS_DEV else "none", max_age=900, path="/")
         return {"message": "refreshed"}
+    except (jwt.InvalidTokenError, ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+
+@api_router.post("/auth/refresh-token")
+async def refresh_token(input: RefreshInput, db: AsyncSession = Depends(get_db)):
+    token = input.refresh_token.strip()
+    try:
+        payload = jwt.decode(token, get_jwt_secret(), algorithms=[JWT_ALGORITHM])
+        if payload.get("type") != "refresh":
+            raise HTTPException(status_code=401, detail="Invalid token type")
+        user = await db.get(User, int(payload["sub"]))
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        access = create_access_token(str(user.id), user.email)
+        return {"access_token": access}
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Refresh token expired")
     except (jwt.InvalidTokenError, ValueError, TypeError):
         raise HTTPException(status_code=401, detail="Invalid refresh token")
 

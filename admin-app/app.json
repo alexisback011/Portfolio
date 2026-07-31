@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "Alex Admin",
+    "slug": "alex-admin",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0a0a0a",
+    "android": {
+      "package": "com.alex.portfolio.admin",
+      "edgeToEdgeEnabled": true
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.alex.portfolio.admin"
+    }
+  }
+}
