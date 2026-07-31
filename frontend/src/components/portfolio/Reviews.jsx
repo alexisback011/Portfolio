@@ -151,6 +151,9 @@ export const Reviews = () => {
                   </button>
                 ))}
               </div>
+              <span className="mt-2 block text-[10px] font-bold uppercase tracking-[0.2em] text-secondary">
+                {form.rating} star{form.rating > 1 ? "s" : ""}
+              </span>
             </div>
 
             <label className="block">
