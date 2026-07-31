@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { PROFILE } from "../../data";
 
@@ -9,6 +10,9 @@ const LINKS = [
   { label: "SKILLS", href: "#skills" },
   { label: "CONTACT", href: "#contact" },
 ];
+
+const adminLinkCls =
+  "text-xs font-bold uppercase tracking-[0.2em] text-secondary hover:text-primary transition-colors duration-200";
 
 export const Nav = () => {
   const [open, setOpen] = useState(false);
@@ -53,6 +57,13 @@ export const Nav = () => {
               {l.label}
             </a>
           ))}
+          <Link
+            to="/login"
+            data-testid="nav-admin"
+            className={adminLinkCls}
+          >
+            Admin
+          </Link>
         </div>
 
         <button
@@ -86,6 +97,14 @@ export const Nav = () => {
                   {l.label}
                 </a>
               ))}
+              <Link
+                to="/login"
+                onClick={() => setOpen(false)}
+                data-testid="mobile-admin"
+                className="text-sm font-bold uppercase tracking-[0.2em] text-secondary hover:text-primary transition-colors"
+              >
+                Admin
+              </Link>
             </div>
           </motion.div>
         )}

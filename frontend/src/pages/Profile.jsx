@@ -11,23 +11,33 @@ import { API } from "../lib/api";
 const EASE = [0.85, 0, 0.15, 1];
 
 const Profile = () => {
-  const { user, logout } = useAuth();
+  const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [loadingMsgs, setLoadingMsgs] = useState(true);
 
   useEffect(() => {
+    if (!loading && !user) navigate("/login");
+  }, [loading, user, navigate]);
+
+  useEffect(() => {
+    let cancelled = false;
     const load = async () => {
       try {
         const { data } = await axios.get(`${API}/contact`, { withCredentials: true });
-        setMessages(data);
+        if (!cancelled) setMessages(data);
       } catch {
-        setMessages([]);
+        if (!cancelled) setMessages([]);
       } finally {
-        setLoadingMsgs(false);
+        if (!cancelled) setLoadingMsgs(false);
       }
     };
     load();
+    const interval = setInterval(load, 10000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, []);
 
   const onLogout = async () => {
@@ -36,6 +46,7 @@ const Profile = () => {
     navigate("/");
   };
 
+  if (loading) return null;
   if (!user || !user.id) return null;
 
   return (
