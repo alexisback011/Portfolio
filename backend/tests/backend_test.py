@@ -302,16 +302,33 @@ class TestContact:
 
 # ---------- Review tests ----------
 class TestReview:
+    def _review_user(self):
+        email = f"REV_{uuid.uuid4().hex[:8]}@test.dev"
+        session = requests.Session()
+        r = session.post(f"{BASE_URL}/api/auth/register",
+                         json={"name": "REVIEW FAN", "email": email, "password": "pass1234"})
+        assert r.status_code == 200
+        return session, r.json()
+
+    def test_review_requires_auth(self):
+        r = requests.post(f"{BASE_URL}/api/review",
+                          json={"rating": 5, "comment": "no auth"})
+        assert r.status_code == 401
+
     def test_review_post_and_list_public(self):
-        payload = {"name": "TEST Fan", "rating": 5,
-                   "comment": f"love the work {uuid.uuid4().hex[:6]}"}
-        r = requests.post(f"{BASE_URL}/api/review", json=payload)
+        session, reg = self._review_user()
+        payload = {"rating": 5, "comment": f"love the work {uuid.uuid4().hex[:6]}"}
+        r = session.post(f"{BASE_URL}/api/review", json=payload)
         assert r.status_code == 200, r.text
         created = r.json()
         assert created["comment"] == payload["comment"]
         assert created["rating"] == 5
         assert "id" in created
+        # name and profile come from the signed-in user
+        assert created["name"] == "REVIEW FAN"
+        assert "profile_image" in created
 
+        # list is still public
         r = requests.get(f"{BASE_URL}/api/review")
         assert r.status_code == 200
         items = r.json()
@@ -319,16 +336,18 @@ class TestReview:
         assert any(m["id"] == created["id"] for m in items)
 
     def test_review_validation(self):
-        r = requests.post(f"{BASE_URL}/api/review",
-                          json={"name": "", "rating": 0, "comment": ""})
+        session, _ = self._review_user()
+        r = session.post(f"{BASE_URL}/api/review",
+                         json={"rating": 0, "comment": ""})
         assert r.status_code == 422
-        r = requests.post(f"{BASE_URL}/api/review",
-                          json={"name": "x", "rating": 6, "comment": "ok"})
+        r = session.post(f"{BASE_URL}/api/review",
+                         json={"rating": 6, "comment": "ok"})
         assert r.status_code == 422
 
     def test_review_delete_admin_only(self, admin_client):
-        payload = {"name": "DELETE REVIEW", "rating": 1, "comment": "remove me"}
-        created = requests.post(f"{BASE_URL}/api/review", json=payload).json()
+        session, _ = self._review_user()
+        payload = {"rating": 1, "comment": "remove me"}
+        created = session.post(f"{BASE_URL}/api/review", json=payload).json()
 
         # unauth delete -> 401
         r = requests.delete(f"{BASE_URL}/api/review/{created['id']}")

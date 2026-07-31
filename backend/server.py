@@ -77,7 +77,9 @@ class ContactMessage(Base):
 class Review(Base):
     __tablename__ = "reviews"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     name: Mapped[str] = mapped_column(String(80), nullable=False)
+    profile_image: Mapped[str | None] = mapped_column(String(2000), nullable=True)
     rating: Mapped[int] = mapped_column(Integer, nullable=False)
     comment: Mapped[str] = mapped_column(String(1000), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
@@ -208,6 +210,16 @@ async def init_db():
             await conn.execute(text("ALTER TABLE users ADD COLUMN is_banned BOOLEAN DEFAULT 0"))
     except Exception:
         pass
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("ALTER TABLE reviews ADD COLUMN user_id INTEGER"))
+    except Exception:
+        pass
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("ALTER TABLE reviews ADD COLUMN profile_image VARCHAR(2000)"))
+    except Exception:
+        pass
     admin_email = os.environ.get("ADMIN_EMAIL", "").strip().lower()
     admin_password = os.environ.get("ADMIN_PASSWORD", "")
     if not admin_email or not admin_password:
@@ -304,7 +316,6 @@ class ContactOut(BaseModel):
 
 
 class ReviewCreate(BaseModel):
-    name: str = Field(..., min_length=1, max_length=80)
     rating: int = Field(..., ge=1, le=5)
     comment: str = Field(..., min_length=1, max_length=1000)
 
@@ -313,6 +324,7 @@ class ReviewOut(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str
     name: str
+    profile_image: str | None = None
     rating: int
     comment: str
     created_at: datetime
@@ -524,13 +536,19 @@ async def delete_contact(message_id: str, admin=Depends(require_admin), db: Asyn
 
 
 @api_router.post("/review", response_model=ReviewOut)
-async def create_review(input: ReviewCreate, db: AsyncSession = Depends(get_db)):
-    review = Review(name=input.name.strip(), rating=input.rating, comment=input.comment.strip())
+async def create_review(input: ReviewCreate, current=Depends(get_current_user),
+                        db: AsyncSession = Depends(get_db)):
+    user = await db.get(User, int(current["id"]))
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    review = Review(name=user.name, rating=input.rating, comment=input.comment.strip(),
+                    user_id=user.id, profile_image=user.profile_image)
     db.add(review)
     await db.commit()
     await db.refresh(review)
     return {"id": review.id, "name": review.name, "rating": review.rating,
-            "comment": review.comment, "created_at": review.created_at}
+            "comment": review.comment, "created_at": review.created_at,
+            "profile_image": review.profile_image}
 
 
 @api_router.get("/review", response_model=List[ReviewOut])
@@ -538,7 +556,8 @@ async def list_reviews(db: AsyncSession = Depends(get_db)):
     stmt = select(Review).order_by(Review.created_at.desc()).limit(200)
     rows = (await db.scalars(stmt)).all()
     return [{"id": r.id, "name": r.name, "rating": r.rating,
-             "comment": r.comment, "created_at": r.created_at} for r in rows]
+             "comment": r.comment, "created_at": r.created_at,
+             "profile_image": r.profile_image} for r in rows]
 
 
 @api_router.delete("/review/{review_id}")
