@@ -299,25 +299,11 @@ async def list_contacts(admin=Depends(require_admin), db: AsyncSession = Depends
 
 app.include_router(api_router)
 
-def _normalize_origin(url: str) -> str:
-    url = url.strip()
-    if url and not url.startswith(("http://", "https://")):
-        return "https://" + url
-    return url
-
-
-def _cors_config() -> dict:
-    raw = os.environ.get("FRONTEND_URL", "")
-    origins = [o for o in (_normalize_origin(x) for x in raw.split(",")) if o]
-    if origins:
-        return {"allow_origins": origins, "allow_origin_regex": None}
-    return {"allow_origins": [], "allow_origin_regex": ".*"}
-
-
 app.add_middleware(
     CORSMiddleware,
+    allow_origins=[],
+    allow_origin_regex=".*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    **_cors_config(),
 )
