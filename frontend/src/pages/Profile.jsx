@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { LogOut, Mail, Home, Trash2, Star, Camera } from "lucide-react";
+import { LogOut, Mail, Home, Trash2, Star, Camera, Users, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
 import { PROFILE } from "../data";
@@ -44,6 +44,9 @@ const Profile = () => {
   const [loadingMsgs, setLoadingMsgs] = useState(true);
   const [reviews, setReviews] = useState([]);
   const [loadingReviews, setLoadingReviews] = useState(true);
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [expandedUser, setExpandedUser] = useState({});
   const [tab, setTab] = useState("messages");
   const [uploading, setUploading] = useState(false);
   const isAdmin = user?.role === "admin";
@@ -72,6 +75,45 @@ const Profile = () => {
       clearInterval(interval);
     };
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const { data } = await axios.get(`${API}/admin/users`, { withCredentials: true });
+        if (!cancelled) setUsers(data);
+      } catch {
+        if (!cancelled) setUsers([]);
+      } finally {
+        if (!cancelled) setLoadingUsers(false);
+      }
+    };
+    load();
+    if (tab === "profiles") {
+      const interval = setInterval(load, 10000);
+      return () => {
+        cancelled = true;
+        clearInterval(interval);
+      };
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdmin, tab]);
+
+  const copyToClipboard = async (text, label) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(`${label} copied.`);
+    } catch {
+      toast.error("Could not copy.");
+    }
+  };
+
+  const toggleUserLogins = (id) => {
+    setExpandedUser((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   const onLogout = async () => {
     await logout();
@@ -228,6 +270,7 @@ const Profile = () => {
             {[
               { key: "messages", label: "Messages", icon: Mail, count: messages.length },
               { key: "reviews", label: "Reviews", icon: Star, count: reviews.length },
+              { key: "profiles", label: "Profiles", icon: Users, count: users.length },
             ].map((t) => (
               <button
                 key={t.key}
@@ -360,6 +403,162 @@ const Profile = () => {
                     <p className="mt-4 text-sm font-light text-muted-foreground leading-relaxed">
                       {r.comment}
                     </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {isAdmin && tab === "profiles" && (
+          <div className="mt-10">
+            <div className="flex items-center gap-3">
+              <Users size={16} className="text-primary" />
+              <span className="text-xs font-bold uppercase tracking-[0.3em]">Registered Profiles</span>
+              <span className="h-px flex-1 bg-white/15" />
+              <span className="text-xs font-bold text-muted-foreground">{users.length}</span>
+            </div>
+
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="profiles-inbox">
+              {loadingUsers ? (
+                <p className="text-sm text-muted-foreground font-light">Loading...</p>
+              ) : users.length === 0 ? (
+                <p className="text-sm text-muted-foreground font-light">
+                  No registered users yet. Signups appear here.
+                </p>
+              ) : (
+                users.map((u) => (
+                  <div
+                    key={u.id}
+                    data-testid={`profile-card-${u.id}`}
+                    className="border border-white/15 hover:border-primary transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-4 p-6">
+                      <div className="flex items-center gap-4">
+                        <div className="h-14 w-14 rounded-full border border-white/20 overflow-hidden bg-white/5 shrink-0">
+                          {u.profile_image ? (
+                            <img
+                              src={u.profile_image}
+                              alt={`${u.name} avatar`}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center font-display text-lg font-black text-primary">
+                              {u.name?.[0]?.toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-3">
+                            <span className="font-display font-bold uppercase tracking-tight">
+                              {u.name}
+                            </span>
+                            <span
+                              className={`text-[10px] font-bold uppercase tracking-[0.2em] ${
+                                u.role === "admin" ? "text-primary" : "text-secondary"
+                              }`}
+                            >
+                              {u.role}
+                            </span>
+                          </div>
+                          <a
+                            href={`mailto:${u.email}`}
+                            className="mt-1 block text-xs text-secondary hover:text-primary transition-colors"
+                          >
+                            {u.email}
+                          </a>
+                        </div>
+                      </div>
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {new Date(u.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    <div className="border-t border-white/10 px-6 py-4 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-14 shrink-0 text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
+                          ID
+                        </span>
+                        <code className="truncate font-mono text-[11px] text-foreground/70">
+                          {u.id}
+                        </code>
+                        <button
+                          data-testid={`copy-id-${u.id}`}
+                          onClick={() => copyToClipboard(u.id, "User ID")}
+                          aria-label="Copy user ID"
+                          className="ml-auto text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          <Copy size={12} />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="w-14 shrink-0 text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
+                          Hash
+                        </span>
+                        <code className="truncate font-mono text-[11px] text-foreground/70">
+                          {u.password_hash}
+                        </code>
+                        <button
+                          data-testid={`copy-hash-${u.id}`}
+                          onClick={() => copyToClipboard(u.password_hash, "Password hash")}
+                          aria-label="Copy password hash"
+                          className="ml-auto text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          <Copy size={12} />
+                        </button>
+                      </div>
+                      <div className="flex gap-2 pt-1 text-xs font-light text-muted-foreground">
+                        <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
+                          logins
+                        </span>
+                        <span>
+                          {u.login_count} · last{" "}
+                          {u.last_login ? new Date(u.last_login).toLocaleString() : "never"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      data-testid={`toggle-logins-${u.id}`}
+                      onClick={() => toggleUserLogins(u.id)}
+                      className="w-full border-t border-white/10 px-6 py-3 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      {expandedUser[u.id]
+                        ? "Hide login history"
+                        : `View login history (${u.logins.length})`}
+                    </button>
+                    {expandedUser[u.id] && (
+                      <div className="border-t border-white/10 px-6 py-4 space-y-4 max-h-64 overflow-y-auto">
+                        {u.logins.length === 0 ? (
+                          <p className="text-xs font-light text-muted-foreground">
+                            No recorded logins.
+                          </p>
+                        ) : (
+                          u.logins.map((l) => (
+                            <div key={l.id} className="text-xs">
+                              <div className="flex items-center justify-between gap-3">
+                                <span className="text-secondary">
+                                  {l.ip_address || "unknown ip"}
+                                </span>
+                                <span className="shrink-0 text-muted-foreground/60">
+                                  {new Date(l.created_at).toLocaleString()}
+                                </span>
+                              </div>
+                              {l.device && (
+                                <p className="mt-1 truncate font-light text-muted-foreground/80">
+                                  {l.device}
+                                </p>
+                              )}
+                              {l.user_agent && (
+                                <p className="mt-0.5 truncate font-mono text-[10px] text-muted-foreground/50">
+                                  {l.user_agent}
+                                </p>
+                              )}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))
               )}

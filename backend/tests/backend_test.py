@@ -93,6 +93,46 @@ class TestAuth:
                                json={"profile_image": "not-an-image"})
         assert r.status_code == 422
 
+
+# ---------- Admin users / login records tests ----------
+class TestAdminUsers:
+    def test_admin_users_requires_auth(self, client):
+        r = requests.get(f"{BASE_URL}/api/admin/users")
+        assert r.status_code == 401
+
+    def test_admin_users_requires_admin_role(self, client):
+        email = f"TEST_{uuid.uuid4().hex[:8]}@test.dev"
+        r = client.post(f"{BASE_URL}/api/auth/register",
+                        json={"name": "REGULAR", "email": email, "password": "pass1234"})
+        assert r.status_code == 200
+        r = client.get(f"{BASE_URL}/api/admin/users")
+        assert r.status_code == 403
+
+    def test_admin_users_lists_profiles_and_logins(self, admin_client):
+        email = f"TEST_{uuid.uuid4().hex[:8]}@test.dev"
+        fresh = requests.Session()
+        r = fresh.post(f"{BASE_URL}/api/auth/register",
+                       json={"name": "PROFILE MAN", "email": email, "password": "pass1234"})
+        assert r.status_code == 200
+        uid = r.json()["id"]
+
+        r = admin_client.get(f"{BASE_URL}/api/admin/users")
+        assert r.status_code == 200, r.text
+        items = r.json()
+        assert isinstance(items, list)
+        profile = next(u for u in items if u["id"] == uid)
+        assert profile["email"] == email.lower()
+        assert profile["name"] == "PROFILE MAN"
+        assert profile["role"] == "user"
+        assert profile["password_hash"]
+        assert profile["login_count"] >= 1
+        assert profile["last_login"] is not None
+        assert len(profile["logins"]) >= 1
+        rec = profile["logins"][0]
+        assert rec["ip_address"]
+        assert rec["user_agent"]
+        assert rec["device"]
+
     def test_login_invalid(self, client):
         r = client.post(f"{BASE_URL}/api/auth/login",
                         json={"email": ADMIN_EMAIL, "password": "wrongpass"})

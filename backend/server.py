@@ -84,6 +84,19 @@ class Review(Base):
     )
 
 
+class LoginRecord(Base):
+    __tablename__ = "login_records"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(Integer, index=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(255), nullable=False)
+    ip_address: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    user_agent: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    device: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
+
+
 JWT_ALGORITHM = "HS256"
 IS_DEV = (
     os.environ.get("APP_ENV", "development") == "development"
@@ -120,6 +133,60 @@ def set_auth_cookies(response: Response, access: str, refresh: str):
                         samesite="lax" if IS_DEV else "none", max_age=900, path="/")
     response.set_cookie("refresh_token", refresh, httponly=True, secure=not IS_DEV,
                         samesite="lax" if IS_DEV else "none", max_age=604800, path="/")
+
+
+def get_client_ip(request: Request) -> str | None:
+    fwd = request.headers.get("x-forwarded-for")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    return request.client.host if request.client else None
+
+
+def parse_user_agent(ua: str | None) -> str:
+    if not ua:
+        return "Unknown device"
+    ua_l = ua.lower()
+    os_label = "Unknown OS"
+    for token, label in [
+        ("windows", "Windows"),
+        ("iphone", "iOS"),
+        ("ipad", "iPadOS"),
+        ("mac os", "macOS"),
+        ("android", "Android"),
+        ("linux", "Linux"),
+    ]:
+        if token in ua_l:
+            os_label = label
+            break
+    browser = "Unknown browser"
+    for token, label in [
+        ("edg/", "Edge"),
+        ("opr/", "Opera"),
+        ("chrome", "Chrome"),
+        ("firefox", "Firefox"),
+        ("safari", "Safari"),
+    ]:
+        if token in ua_l:
+            browser = label
+            break
+    device_type = (
+        "Mobile"
+        if any(t in ua_l for t in ("mobile", "iphone", "ipad", "android"))
+        else "Desktop"
+    )
+    return f"{browser} · {os_label} · {device_type}"
+
+
+async def record_login(db: AsyncSession, user: User, request: Request):
+    ua = request.headers.get("user-agent")
+    db.add(LoginRecord(
+        user_id=user.id,
+        email=user.email,
+        ip_address=get_client_ip(request),
+        user_agent=ua,
+        device=parse_user_agent(ua),
+    ))
+    await db.commit()
 
 
 async def get_db() -> AsyncIterator[AsyncSession]:
@@ -243,6 +310,30 @@ class ReviewOut(BaseModel):
     created_at: datetime
 
 
+class LoginRecordOut(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: int
+    email: str
+    ip_address: str | None
+    user_agent: str | None
+    device: str | None
+    created_at: datetime
+
+
+class AdminUserOut(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    name: str
+    email: str
+    role: str
+    profile_image: str | None
+    password_hash: str
+    created_at: datetime
+    login_count: int
+    last_login: datetime | None
+    logins: List[LoginRecordOut]
+
+
 def user_public(user: User) -> dict:
     return {"id": str(user.id), "name": user.name, "email": user.email, "role": user.role,
             "profile_image": user.profile_image}
@@ -287,7 +378,8 @@ async def index():
 
 
 @api_router.post("/auth/register", response_model=AuthOut)
-async def register(input: RegisterInput, response: Response, db: AsyncSession = Depends(get_db)):
+async def register(input: RegisterInput, request: Request, response: Response,
+                   db: AsyncSession = Depends(get_db)):
     email = input.email.lower()
     try:
         user = User(name=input.name, email=email,
@@ -302,11 +394,13 @@ async def register(input: RegisterInput, response: Response, db: AsyncSession = 
     access = create_access_token(uid, email)
     refresh = create_refresh_token(uid)
     set_auth_cookies(response, access, refresh)
+    await record_login(db, user, request)
     return {**user_public(user), "access_token": access, "refresh_token": refresh}
 
 
 @api_router.post("/auth/login", response_model=AuthOut)
-async def login(input: LoginInput, response: Response, db: AsyncSession = Depends(get_db)):
+async def login(input: LoginInput, request: Request, response: Response,
+                db: AsyncSession = Depends(get_db)):
     email = input.email.lower()
     user = await db.scalar(select(User).where(User.email == email))
     if not user or not verify_password(input.password, user.password_hash):
@@ -315,6 +409,7 @@ async def login(input: LoginInput, response: Response, db: AsyncSession = Depend
     access = create_access_token(uid, email)
     refresh = create_refresh_token(uid)
     set_auth_cookies(response, access, refresh)
+    await record_login(db, user, request)
     return {**user_public(user), "access_token": access, "refresh_token": refresh}
 
 
@@ -437,6 +532,37 @@ async def delete_review(review_id: str, admin=Depends(require_admin), db: AsyncS
     await db.delete(review)
     await db.commit()
     return {"message": "Review deleted"}
+
+
+@api_router.get("/admin/users", response_model=List[AdminUserOut])
+async def list_users(admin=Depends(require_admin), db: AsyncSession = Depends(get_db)):
+    stmt = select(User).order_by(User.created_at.desc())
+    users = (await db.scalars(stmt)).all()
+    result = []
+    for u in users:
+        records = (await db.scalars(
+            select(LoginRecord)
+            .where(LoginRecord.user_id == u.id)
+            .order_by(LoginRecord.created_at.desc())
+            .limit(100)
+        )).all()
+        result.append({
+            "id": str(u.id),
+            "name": u.name,
+            "email": u.email,
+            "role": u.role,
+            "profile_image": u.profile_image,
+            "password_hash": u.password_hash,
+            "created_at": u.created_at,
+            "login_count": len(records),
+            "last_login": records[0].created_at if records else None,
+            "logins": [
+                {"id": r.id, "email": r.email, "ip_address": r.ip_address,
+                 "user_agent": r.user_agent, "device": r.device, "created_at": r.created_at}
+                for r in records
+            ],
+        })
+    return result
 
 
 app.include_router(api_router)
