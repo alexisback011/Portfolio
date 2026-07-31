@@ -108,11 +108,25 @@ export const Reviews = () => {
             </motion.h2>
 
             {reviews.length > 0 && (
-              <div className="mt-6">
-                <span className="block text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                  {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
+              <motion.div
+                initial={{ opacity: 0, x: -24 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, ease: EASE, delay: 0.2 }}
+                className="mt-8 inline-flex items-center gap-5 border border-white/20 px-6 py-4 hover:border-primary transition-colors"
+              >
+                <span className="star-glow font-display text-5xl md:text-6xl font-black leading-none text-primary">
+                  {reviews.length}
                 </span>
-              </div>
+                <div className="space-y-1">
+                  <span className="block text-xs font-bold uppercase tracking-[0.3em] text-foreground">
+                    {reviews.length === 1 ? "review" : "reviews"}
+                  </span>
+                  <span className="block text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                    from the community
+                  </span>
+                </div>
+              </motion.div>
             )}
           </div>
 
