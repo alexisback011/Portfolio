@@ -67,6 +67,32 @@ class TestAuth:
                           json={"refresh_token": "garbage.token.value"})
         assert r.status_code == 401
 
+    def test_update_profile_image(self, admin_client):
+        data_url = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAPh0dXZlA"
+        r = admin_client.patch(f"{BASE_URL}/api/auth/me",
+                               json={"profile_image": data_url})
+        assert r.status_code == 200, r.text
+        assert r.json()["profile_image"] == data_url
+
+        # persisted on /auth/me
+        r = admin_client.get(f"{BASE_URL}/api/auth/me")
+        assert r.status_code == 200
+        assert r.json()["profile_image"] == data_url
+
+        # clearing works
+        r = admin_client.patch(f"{BASE_URL}/api/auth/me", json={"profile_image": ""})
+        assert r.status_code == 200
+        assert r.json()["profile_image"] is None
+
+    def test_update_profile_image_requires_auth(self, client):
+        r = requests.patch(f"{BASE_URL}/api/auth/me", json={"profile_image": "x"})
+        assert r.status_code == 401
+
+    def test_update_profile_image_invalid(self, admin_client):
+        r = admin_client.patch(f"{BASE_URL}/api/auth/me",
+                               json={"profile_image": "not-an-image"})
+        assert r.status_code == 422
+
     def test_login_invalid(self, client):
         r = client.post(f"{BASE_URL}/api/auth/login",
                         json={"email": ADMIN_EMAIL, "password": "wrongpass"})

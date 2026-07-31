@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { PROFILE } from "../../data";
+import { useAuth } from "../../context/AuthContext";
 
 const LINKS = [
   { label: "WORK", href: "#work" },
@@ -12,12 +13,17 @@ const LINKS = [
   { label: "CONTACT", href: "#contact" },
 ];
 
-const adminLinkCls =
-  "text-xs font-bold uppercase tracking-[0.2em] text-secondary hover:text-primary transition-colors duration-200";
+const authLinkCls =
+  "text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors duration-200";
+
+const avatarUrl = (u) =>
+  u?.profile_image ||
+  `https://ui-avatars.com/api/?name=${encodeURIComponent(u?.name || "?")}&background=0a0a0a&color=ff004d&bold=true&font-size=0.4`;
 
 export const Nav = () => {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -58,13 +64,37 @@ export const Nav = () => {
               {l.label}
             </a>
           ))}
-          <Link
-            to="/login"
-            data-testid="nav-admin"
-            className={adminLinkCls}
-          >
-            Admin
-          </Link>
+          {user && user.id ? (
+            <Link
+              to="/profile"
+              data-testid="nav-account"
+              className="flex items-center gap-3 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors duration-200"
+            >
+              <img
+                src={avatarUrl(user)}
+                alt=""
+                className="h-7 w-7 rounded-full border border-white/20 object-cover"
+              />
+              {user.name}
+            </Link>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                data-testid="nav-login"
+                className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors duration-200"
+              >
+                Sign In
+              </Link>
+              <Link
+                to="/signup"
+                data-testid="nav-signup"
+                className="text-xs font-bold uppercase tracking-[0.2em] text-secondary hover:text-primary transition-colors duration-200"
+              >
+                Sign Up
+              </Link>
+            </>
+          )}
         </div>
 
         <button
@@ -98,14 +128,40 @@ export const Nav = () => {
                   {l.label}
                 </a>
               ))}
-              <Link
-                to="/login"
-                onClick={() => setOpen(false)}
-                data-testid="mobile-admin"
-                className="text-sm font-bold uppercase tracking-[0.2em] text-secondary hover:text-primary transition-colors"
-              >
-                Admin
-              </Link>
+              {user && user.id ? (
+                <Link
+                  to="/profile"
+                  onClick={() => setOpen(false)}
+                  data-testid="mobile-account"
+                  className="flex items-center gap-3 text-sm font-bold uppercase tracking-[0.2em] text-secondary hover:text-primary transition-colors"
+                >
+                  <img
+                    src={avatarUrl(user)}
+                    alt=""
+                    className="h-6 w-6 rounded-full border border-white/20 object-cover"
+                  />
+                  {user.name}
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    onClick={() => setOpen(false)}
+                    data-testid="mobile-login"
+                    className="text-sm font-bold uppercase tracking-[0.2em] text-foreground hover:text-primary transition-colors"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    to="/signup"
+                    onClick={() => setOpen(false)}
+                    data-testid="mobile-signup"
+                    className="text-sm font-bold uppercase tracking-[0.2em] text-secondary hover:text-primary transition-colors"
+                  >
+                    Sign Up
+                  </Link>
+                </>
+              )}
             </div>
           </motion.div>
         )}

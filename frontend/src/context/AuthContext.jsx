@@ -63,8 +63,20 @@ export const AuthProvider = ({ children }) => {
     setUser(false);
   };
 
+  const updateProfileImage = async (profileImage) => {
+    const { data } = await axios.patch(
+      `${API}/auth/me`,
+      { profile_image: profileImage },
+      { withCredentials: true }
+    );
+    setUser((u) => (u ? { ...u, profile_image: data.profile_image } : u));
+    return data;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, checkAuth }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, register, logout, checkAuth, updateProfileImage }}
+    >
       {children}
     </AuthContext.Provider>
   );

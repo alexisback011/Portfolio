@@ -8,10 +8,10 @@ import { PROFILE } from "../data";
 
 const EASE = [0.85, 0, 0.15, 1];
 
-const Login = () => {
-  const { user, login } = useAuth();
+const Signup = () => {
+  const { user, register } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -24,10 +24,14 @@ const Login = () => {
   const onSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    if (form.password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
     setLoading(true);
     try {
-      await login(form.email, form.password);
-      toast.success("Welcome back.");
+      await register(form.name.trim(), form.email.trim(), form.password);
+      toast.success("Account created. Welcome!");
       navigate("/profile");
     } catch (err) {
       const msg = formatApiErrorDetail(err.response?.data?.detail) || err.message;
@@ -71,13 +75,28 @@ const Login = () => {
             data-testid="auth-title"
             className="mt-6 font-display text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none"
           >
-            Sign In
+            Sign Up
           </h1>
           <p className="mt-3 text-sm font-light text-muted-foreground">
-            Access your space.
+            Join the community. Get your own profile.
           </p>
 
           <form onSubmit={onSubmit} data-testid="auth-form" className="mt-10 flex flex-col gap-7">
+            <label className="block">
+              <span className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                Name
+              </span>
+              <input
+                type="text"
+                name="name"
+                value={form.name}
+                onChange={onChange}
+                placeholder="Your name"
+                data-testid="auth-name"
+                className={inputCls}
+                required
+              />
+            </label>
             <label className="block">
               <span className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
                 Email
@@ -102,7 +121,7 @@ const Login = () => {
                 name="password"
                 value={form.password}
                 onChange={onChange}
-                placeholder="••••••••"
+                placeholder="Minimum 6 characters"
                 data-testid="auth-password"
                 className={inputCls}
                 required
@@ -125,7 +144,7 @@ const Login = () => {
                 <Loader2 size={16} className="animate-spin" />
               ) : (
                 <>
-                  Sign In
+                  Create Account
                   <ArrowUpRight size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-200" />
                 </>
               )}
@@ -133,13 +152,13 @@ const Login = () => {
           </form>
 
           <p className="mt-8 text-sm font-light text-muted-foreground">
-            No account yet?{" "}
+            Already have an account?{" "}
             <Link
-              to="/signup"
-              data-testid="goto-signup"
+              to="/login"
+              data-testid="goto-login"
               className="text-secondary hover:text-primary transition-colors"
             >
-              Create one →
+              Sign in →
             </Link>
           </p>
         </motion.div>
@@ -148,4 +167,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Signup;

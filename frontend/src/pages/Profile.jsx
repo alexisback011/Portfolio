@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { LogOut, Mail, Home, Trash2, Star } from "lucide-react";
+import { LogOut, Mail, Home, Trash2, Star, Camera } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
 import { PROFILE } from "../data";
@@ -10,20 +10,50 @@ import { API } from "../lib/api";
 
 const EASE = [0.85, 0, 0.15, 1];
 
+const readAsDataUrl = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+const resizeImage = (dataUrl, maxSize = 512) =>
+  new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL("image/jpeg", 0.85));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+
 const Profile = () => {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, updateProfileImage } = useAuth();
   const navigate = useNavigate();
+  const fileRef = useRef(null);
   const [messages, setMessages] = useState([]);
   const [loadingMsgs, setLoadingMsgs] = useState(true);
   const [reviews, setReviews] = useState([]);
   const [loadingReviews, setLoadingReviews] = useState(true);
   const [tab, setTab] = useState("messages");
+  const [uploading, setUploading] = useState(false);
+  const isAdmin = user?.role === "admin";
 
   useEffect(() => {
     if (!loading && !user) navigate("/login");
   }, [loading, user, navigate]);
 
   useEffect(() => {
+    if (!isAdmin) return;
     let cancelled = false;
     const load = async () => {
       try {
@@ -41,7 +71,7 @@ const Profile = () => {
       cancelled = true;
       clearInterval(interval);
     };
-  }, []);
+  }, [isAdmin]);
 
   const onLogout = async () => {
     await logout();
@@ -60,7 +90,7 @@ const Profile = () => {
   };
 
   useEffect(() => {
-    if (tab !== "reviews") return;
+    if (!isAdmin || tab !== "reviews") return;
     let cancelled = false;
     (async () => {
       try {
@@ -75,7 +105,7 @@ const Profile = () => {
     return () => {
       cancelled = true;
     };
-  }, [tab]);
+  }, [tab, isAdmin]);
 
   const onDeleteReview = async (id) => {
     try {
@@ -84,6 +114,23 @@ const Profile = () => {
       toast.success("Review deleted.");
     } catch {
       toast.error("Could not delete review.");
+    }
+  };
+
+  const onFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const raw = await readAsDataUrl(file);
+      const small = await resizeImage(raw);
+      await updateProfileImage(small);
+      toast.success("Profile picture updated.");
+    } catch {
+      toast.error("Could not update profile picture.");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
     }
   };
 
@@ -117,47 +164,92 @@ const Profile = () => {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE }}
-          className="mt-16"
+          className="mt-16 flex flex-col md:flex-row md:items-center gap-8"
         >
-          <span className="text-xs font-bold uppercase tracking-[0.3em] text-secondary">
-            [ SIGNED IN ]
-          </span>
-          <h1
-            data-testid="profile-name"
-            className="mt-4 font-display text-5xl md:text-7xl font-black uppercase tracking-tighter leading-none"
-          >
-            {user.name}
-          </h1>
-          <p data-testid="profile-email" className="mt-4 text-base font-light text-muted-foreground">
-            {user.email} · <span className="text-primary uppercase">{user.role}</span>
-          </p>
+          <div className="relative shrink-0">
+            <div className="h-28 w-28 md:h-32 md:w-32 rounded-full border border-white/20 overflow-hidden bg-white/5">
+              {user.profile_image ? (
+                <img
+                  src={user.profile_image}
+                  alt={`${user.name} profile`}
+                  data-testid="profile-avatar"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div
+                  data-testid="profile-avatar"
+                  className="h-full w-full flex items-center justify-center font-display text-4xl font-black text-primary"
+                >
+                  {user.name?.[0]?.toUpperCase()}
+                </div>
+              )}
+            </div>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              data-testid="profile-avatar-input"
+              onChange={onFileChange}
+            />
+            <button
+              data-testid="profile-avatar-upload"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              aria-label="Change profile picture"
+              className="absolute bottom-0 right-0 h-10 w-10 rounded-full bg-primary text-black flex items-center justify-center border-2 border-background hover:bg-secondary transition-colors disabled:opacity-60"
+            >
+              {uploading ? (
+                <span className="h-4 w-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+              ) : (
+                <Camera size={16} />
+              )}
+            </button>
+          </div>
+
+          <div>
+            <span className="text-xs font-bold uppercase tracking-[0.3em] text-secondary">
+              [ SIGNED IN ]
+            </span>
+            <h1
+              data-testid="profile-name"
+              className="mt-4 font-display text-5xl md:text-7xl font-black uppercase tracking-tighter leading-none"
+            >
+              {user.name}
+            </h1>
+            <p data-testid="profile-email" className="mt-4 text-base font-light text-muted-foreground">
+              {user.email} · <span className="text-primary uppercase">{user.role}</span>
+            </p>
+          </div>
         </motion.div>
 
-        <div className="mt-16 flex flex-wrap items-center gap-4">
-          {[
-            { key: "messages", label: "Messages", icon: Mail, count: messages.length },
-            { key: "reviews", label: "Reviews", icon: Star, count: reviews.length },
-          ].map((t) => (
-            <button
-              key={t.key}
-              data-testid={`tab-${t.key}`}
-              onClick={() => setTab(t.key)}
-              className={`inline-flex items-center gap-2 border px-5 py-3 text-xs font-bold uppercase tracking-[0.2em] transition-colors ${
-                tab === t.key
-                  ? "border-primary bg-primary text-black"
-                  : "border-white/20 text-muted-foreground hover:border-white/40 hover:text-foreground"
-              }`}
-            >
-              <t.icon size={14} />
-              {t.label}
-              <span className={tab === t.key ? "text-black/70" : "text-muted-foreground"}>
-                {t.count}
-              </span>
-            </button>
-          ))}
-        </div>
+        {isAdmin && (
+          <div className="mt-16 flex flex-wrap items-center gap-4">
+            {[
+              { key: "messages", label: "Messages", icon: Mail, count: messages.length },
+              { key: "reviews", label: "Reviews", icon: Star, count: reviews.length },
+            ].map((t) => (
+              <button
+                key={t.key}
+                data-testid={`tab-${t.key}`}
+                onClick={() => setTab(t.key)}
+                className={`inline-flex items-center gap-2 border px-5 py-3 text-xs font-bold uppercase tracking-[0.2em] transition-colors ${
+                  tab === t.key
+                    ? "border-primary bg-primary text-black"
+                    : "border-white/20 text-muted-foreground hover:border-white/40 hover:text-foreground"
+                }`}
+              >
+                <t.icon size={14} />
+                {t.label}
+                <span className={tab === t.key ? "text-black/70" : "text-muted-foreground"}>
+                  {t.count}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
 
-        {tab === "messages" && (
+        {isAdmin && tab === "messages" && (
           <div className="mt-10">
             <div className="flex items-center gap-3">
               <Mail size={16} className="text-primary" />
@@ -212,7 +304,7 @@ const Profile = () => {
           </div>
         )}
 
-        {tab === "reviews" && (
+        {isAdmin && tab === "reviews" && (
           <div className="mt-10">
             <div className="flex items-center gap-3">
               <Star size={16} className="text-primary" />
@@ -240,27 +332,16 @@ const Profile = () => {
                       <div className="flex items-center gap-3">
                         <span className="flex items-center gap-0.5">
                           {[1, 2, 3, 4, 5].map((n) => (
-                            <motion.span
+                            <Star
                               key={n}
-                              initial={{ opacity: 0, scale: 0 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{
-                                type: "spring",
-                                stiffness: 260,
-                                damping: 16,
-                                delay: n * 0.06,
-                              }}
-                            >
-                              <Star
-                                size={12}
-                                strokeWidth={n <= r.rating ? 2 : 1}
-                                className={`star-glitch ${
-                                  n <= r.rating
-                                    ? "fill-primary text-primary"
-                                    : "fill-transparent text-white/25"
-                                }`}
-                              />
-                            </motion.span>
+                              size={12}
+                              strokeWidth={n <= r.rating ? 2 : 1}
+                              className={
+                                n <= r.rating
+                                  ? "fill-primary text-primary"
+                                  : "fill-transparent text-white/25"
+                              }
+                            />
                           ))}
                         </span>
                         <span className="text-xs text-muted-foreground">

@@ -15,7 +15,7 @@ import bcrypt
 import jwt
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
-from sqlalchemy import String, Integer, DateTime, select
+from sqlalchemy import String, Integer, DateTime, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -56,6 +56,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="user")
+    profile_image: Mapped[str | None] = mapped_column(String(2000), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
     )
@@ -129,6 +130,11 @@ async def get_db() -> AsyncIterator[AsyncSession]:
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN profile_image VARCHAR(2000)"))
+    except Exception:
+        pass
     admin_email = os.environ.get("ADMIN_EMAIL", "").strip().lower()
     admin_password = os.environ.get("ADMIN_PASSWORD", "")
     if not admin_email or not admin_password:
@@ -184,11 +190,16 @@ class RefreshInput(BaseModel):
     refresh_token: str
 
 
+class UpdateProfileInput(BaseModel):
+    profile_image: str | None = Field(default=None, max_length=2000)
+
+
 class UserOut(BaseModel):
     id: str
     name: str
     email: str
     role: str = "user"
+    profile_image: str | None = None
 
 
 class AuthOut(BaseModel):
@@ -197,6 +208,7 @@ class AuthOut(BaseModel):
     name: str
     email: str
     role: str = "user"
+    profile_image: str | None = None
     access_token: str
     refresh_token: str
 
@@ -232,7 +244,8 @@ class ReviewOut(BaseModel):
 
 
 def user_public(user: User) -> dict:
-    return {"id": str(user.id), "name": user.name, "email": user.email, "role": user.role}
+    return {"id": str(user.id), "name": user.name, "email": user.email, "role": user.role,
+            "profile_image": user.profile_image}
 
 
 async def get_current_user(request: Request, db: AsyncSession = Depends(get_db)) -> dict:
@@ -315,6 +328,21 @@ async def logout(response: Response):
 @api_router.get("/auth/me", response_model=UserOut)
 async def me(current=Depends(get_current_user)):
     return current
+
+
+@api_router.patch("/auth/me", response_model=UserOut)
+async def update_me(input: UpdateProfileInput, current=Depends(get_current_user),
+                    db: AsyncSession = Depends(get_db)):
+    user = await db.get(User, int(current["id"]))
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    pi = (input.profile_image or "").strip()
+    if pi and not (pi.startswith("data:image/") or pi.startswith("http://") or pi.startswith("https://")):
+        raise HTTPException(status_code=422, detail="profile_image must be a data:image URL or http(s) URL")
+    user.profile_image = pi or None
+    await db.commit()
+    await db.refresh(user)
+    return user_public(user)
 
 
 @api_router.post("/auth/refresh")
