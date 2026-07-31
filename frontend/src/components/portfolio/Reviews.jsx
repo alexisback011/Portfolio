@@ -37,7 +37,7 @@ export const Reviews = () => {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    const load = async () => {
       try {
         const { data } = await axios.get(`${API}/review`);
         if (!cancelled) setReviews(data);
@@ -46,9 +46,12 @@ export const Reviews = () => {
       } finally {
         if (!cancelled) setLoading(false);
       }
-    })();
+    };
+    load();
+    const interval = setInterval(load, 10000);
     return () => {
       cancelled = true;
+      clearInterval(interval);
     };
   }, []);
 
@@ -113,9 +116,9 @@ export const Reviews = () => {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, ease: EASE, delay: 0.2 }}
-                className="mt-8 inline-flex items-center gap-5 border border-white/20 px-6 py-4 hover:border-primary transition-colors"
+                className="mt-8 inline-flex items-center gap-3 border border-white/20 px-4 py-3 hover:border-primary transition-colors"
               >
-                <span className="glitch-number font-display text-5xl md:text-6xl font-medium leading-none">
+                <span className="glitch-number font-display text-2xl md:text-3xl font-medium leading-none">
                   {reviews.length}
                   <span className="count-cursor">_</span>
                 </span>
