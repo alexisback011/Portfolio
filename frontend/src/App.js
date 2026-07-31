@@ -14,6 +14,7 @@ import { Reviews } from "@/components/portfolio/Reviews";
 import { Contact } from "@/components/portfolio/Contact";
 import { Footer } from "@/components/portfolio/Footer";
 import Auth from "@/pages/Auth";
+import ForgotPassword from "@/pages/ForgotPassword";
 import Profile from "@/pages/Profile";
 import { PROFILE } from "@/data";
 
@@ -82,6 +83,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<Auth />} />
           <Route path="/signup" element={<Auth />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/profile" element={<Profile />} />
         </Routes>
       </BrowserRouter>

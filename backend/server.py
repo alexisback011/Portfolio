@@ -7,8 +7,13 @@ load_dotenv(ROOT_DIR / '.env')
 import os
 import logging
 import uuid
+import hmac
+import hashlib
+import secrets
+import smtplib
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone, timedelta
+from email.message import EmailMessage
 from typing import AsyncIterator, List
 
 import bcrypt
@@ -95,6 +100,20 @@ class LoginRecord(Base):
     ip_address: Mapped[str | None] = mapped_column(String(64), nullable=True)
     user_agent: Mapped[str | None] = mapped_column(String(500), nullable=True)
     device: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
+
+
+class OtpRecord(Base):
+    __tablename__ = "otp_records"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    purpose: Mapped[str] = mapped_column(String(20), nullable=False)
+    code_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    used: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
     )
@@ -192,6 +211,82 @@ async def record_login(db: AsyncSession, user: User, request: Request):
     await db.commit()
 
 
+SMTP_HOST = os.environ.get("SMTP_HOST", "")
+SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+SMTP_USER = os.environ.get("SMTP_USER", "")
+SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+SMTP_FROM = os.environ.get("SMTP_FROM", SMTP_USER or "no-reply@portfolio.app")
+SITE_NAME = os.environ.get("SITE_NAME", "Alex Portfolio")
+
+OTP_TTL_MINUTES = 10
+OTP_MAX_ATTEMPTS = 5
+
+
+def generate_otp() -> str:
+    return f"{secrets.randbelow(1000000):06d}"
+
+
+def hash_otp(code: str) -> str:
+    return hashlib.sha256(code.encode("utf-8")).hexdigest()
+
+
+def send_email(to_email: str, subject: str, body: str) -> bool:
+    if not (SMTP_HOST and SMTP_USER):
+        return False
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = SMTP_FROM
+    msg["To"] = to_email
+    msg.set_content(body)
+    try:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.send_message(msg)
+        return True
+    except Exception as e:
+        logger.warning("Failed to send email: %s", e)
+        return False
+
+
+async def issue_otp(db: AsyncSession, email: str, purpose: str) -> str:
+    code = generate_otp()
+    await db.execute(delete(OtpRecord).where(
+        OtpRecord.email == email, OtpRecord.purpose == purpose))
+    db.add(OtpRecord(
+        email=email,
+        purpose=purpose,
+        code_hash=hash_otp(code),
+        expires_at=datetime.now(timezone.utc) + timedelta(minutes=OTP_TTL_MINUTES),
+    ))
+    await db.commit()
+    return code
+
+
+def _utc_naive(dt: datetime) -> datetime:
+    if dt.tzinfo is not None:
+        return dt.astimezone(timezone.utc).replace(tzinfo=None)
+    return dt
+
+
+async def verify_otp(db: AsyncSession, email: str, purpose: str, code: str) -> bool:
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    rec = await db.scalar(select(OtpRecord)
+                          .where(OtpRecord.email == email,
+                                 OtpRecord.purpose == purpose,
+                                 OtpRecord.used == False)
+                          .order_by(OtpRecord.created_at.desc()))
+    if not rec or _utc_naive(rec.expires_at) < now or rec.attempts >= OTP_MAX_ATTEMPTS:
+        return False
+    if not hmac.compare_digest(hash_otp(code), rec.code_hash):
+        rec.attempts += 1
+        await db.commit()
+        return False
+    rec.used = True
+    await db.commit()
+    return True
+
+
 async def get_db() -> AsyncIterator[AsyncSession]:
     async with SessionLocal() as session:
         yield session
@@ -281,6 +376,29 @@ class UpdateProfileInput(BaseModel):
     password: str | None = Field(default=None, min_length=6, max_length=128)
     current_password: str | None = Field(default=None, max_length=128)
     profile_image: str | None = Field(default=None, max_length=2000)
+
+
+class RequestSignupOtpInput(BaseModel):
+    name: str = Field(..., min_length=1, max_length=80)
+    email: EmailStr
+    password: str = Field(..., min_length=6, max_length=128)
+
+
+class VerifySignupInput(BaseModel):
+    email: EmailStr
+    otp: str = Field(..., min_length=6, max_length=6)
+    name: str = Field(..., min_length=1, max_length=80)
+    password: str = Field(..., min_length=6, max_length=128)
+
+
+class RequestResetOtpInput(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordInput(BaseModel):
+    email: EmailStr
+    otp: str = Field(..., min_length=6, max_length=6)
+    new_password: str = Field(..., min_length=6, max_length=128)
 
 
 class UserOut(BaseModel):
@@ -423,6 +541,81 @@ async def register(input: RegisterInput, request: Request, response: Response,
     set_auth_cookies(response, access, refresh)
     await record_login(db, user, request)
     return {**user_public(user), "access_token": access, "refresh_token": refresh}
+
+
+@api_router.post("/auth/request-signup-otp")
+async def request_signup_otp(input: RequestSignupOtpInput, db: AsyncSession = Depends(get_db)):
+    email = input.email.lower()
+    existing = await db.scalar(select(User).where(User.email == email))
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    code = await issue_otp(db, email, "signup")
+    subject = f"Verify your email — {SITE_NAME}"
+    body = (f"Your verification code for {SITE_NAME} is:\n\n{code}\n\n"
+            f"It expires in {OTP_TTL_MINUTES} minutes.")
+    sent = send_email(email, subject, body)
+    if not sent and not IS_DEV:
+        raise HTTPException(status_code=500, detail="Could not send verification email")
+    resp = {"message": "Verification code sent", "email": email}
+    if IS_DEV and not sent:
+        resp["dev_otp"] = code
+        logger.info("Dev OTP for %s: %s", email, code)
+    return resp
+
+
+@api_router.post("/auth/verify-signup-otp", response_model=AuthOut)
+async def verify_signup_otp(input: VerifySignupInput, request: Request, response: Response,
+                            db: AsyncSession = Depends(get_db)):
+    email = input.email.lower()
+    if not await verify_otp(db, email, "signup", input.otp):
+        raise HTTPException(status_code=400, detail="Invalid or expired verification code")
+    existing = await db.scalar(select(User).where(User.email == email))
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    user = User(name=input.name, email=email,
+                password_hash=hash_password(input.password), role="user")
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    uid = str(user.id)
+    access = create_access_token(uid, email)
+    refresh = create_refresh_token(uid)
+    set_auth_cookies(response, access, refresh)
+    await record_login(db, user, request)
+    return {**user_public(user), "access_token": access, "refresh_token": refresh}
+
+
+@api_router.post("/auth/request-reset-otp")
+async def request_reset_otp(input: RequestResetOtpInput, db: AsyncSession = Depends(get_db)):
+    email = input.email.lower()
+    user = await db.scalar(select(User).where(User.email == email))
+    if not user:
+        raise HTTPException(status_code=404, detail="No account found with that email")
+    code = await issue_otp(db, email, "reset")
+    subject = f"Reset your password — {SITE_NAME}"
+    body = (f"Your password reset code for {SITE_NAME} is:\n\n{code}\n\n"
+            f"It expires in {OTP_TTL_MINUTES} minutes.")
+    sent = send_email(email, subject, body)
+    if not sent and not IS_DEV:
+        raise HTTPException(status_code=500, detail="Could not send reset email")
+    resp = {"message": "Reset code sent", "email": email}
+    if IS_DEV and not sent:
+        resp["dev_otp"] = code
+        logger.info("Dev reset OTP for %s: %s", email, code)
+    return resp
+
+
+@api_router.post("/auth/reset-password")
+async def reset_password(input: ResetPasswordInput, db: AsyncSession = Depends(get_db)):
+    email = input.email.lower()
+    if not await verify_otp(db, email, "reset", input.otp):
+        raise HTTPException(status_code=400, detail="Invalid or expired reset code")
+    user = await db.scalar(select(User).where(User.email == email))
+    if not user:
+        raise HTTPException(status_code=404, detail="No account found with that email")
+    user.password_hash = hash_password(input.new_password)
+    await db.commit()
+    return {"message": "Password updated. You can now sign in."}
 
 
 @api_router.post("/auth/login", response_model=AuthOut)

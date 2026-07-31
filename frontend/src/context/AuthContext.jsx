@@ -54,6 +54,43 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
+  const requestSignupOtp = async (name, email, password) => {
+    const { data } = await axios.post(
+      `${API}/auth/request-signup-otp`,
+      { name, email, password },
+      { withCredentials: true }
+    );
+    return data;
+  };
+
+  const verifySignupOtp = async (name, email, password, otp) => {
+    const { data } = await axios.post(
+      `${API}/auth/verify-signup-otp`,
+      { name, email, password, otp },
+      { withCredentials: true }
+    );
+    setUser(data);
+    return data;
+  };
+
+  const requestResetOtp = async (email) => {
+    const { data } = await axios.post(
+      `${API}/auth/request-reset-otp`,
+      { email },
+      { withCredentials: true }
+    );
+    return data;
+  };
+
+  const resetPassword = async (email, otp, new_password) => {
+    const { data } = await axios.post(
+      `${API}/auth/reset-password`,
+      { email, otp, new_password },
+      { withCredentials: true }
+    );
+    return data;
+  };
+
   const logout = async () => {
     try {
       await axios.post(`${API}/auth/logout`, {}, { withCredentials: true });
@@ -81,7 +118,20 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, register, logout, checkAuth, updateProfileImage, updateProfile }}
+      value={{
+        user,
+        loading,
+        login,
+        register,
+        logout,
+        checkAuth,
+        updateProfileImage,
+        updateProfile,
+        requestSignupOtp,
+        verifySignupOtp,
+        requestResetOtp,
+        resetPassword,
+      }}
     >
       {children}
     </AuthContext.Provider>

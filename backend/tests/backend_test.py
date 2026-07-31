@@ -141,6 +141,82 @@ class TestAuth:
         assert r.json()["name"] == "NEW NAME"
 
 
+# ---------- Email OTP tests ----------
+class TestEmailOtp:
+    def _request_signup(self, email):
+        r = requests.post(f"{BASE_URL}/api/auth/request-signup-otp",
+                          json={"name": "OTP USER", "email": email, "password": "pass1234"})
+        assert r.status_code == 200, r.text
+        return r.json()
+
+    def test_signup_otp_flow(self):
+        email = f"otp_{uuid.uuid4().hex[:8]}@test.dev"
+        data = self._request_signup(email)
+        assert "dev_otp" in data, "expected dev OTP in dev mode"
+
+        # wrong code fails
+        r = requests.post(f"{BASE_URL}/api/auth/verify-signup-otp",
+                          json={"email": email, "otp": "000000",
+                                "name": "OTP USER", "password": "pass1234"})
+        assert r.status_code == 400
+
+        # correct code creates account and signs in
+        r = requests.post(f"{BASE_URL}/api/auth/verify-signup-otp",
+                          json={"email": email, "otp": data["dev_otp"],
+                                "name": "OTP USER", "password": "pass1234"})
+        assert r.status_code == 200, r.text
+        resp = r.json()
+        assert resp["email"] == email.lower()
+        assert resp["role"] == "user"
+        assert resp["access_token"]
+
+        # same code cannot be reused
+        r = requests.post(f"{BASE_URL}/api/auth/verify-signup-otp",
+                          json={"email": email, "otp": data["dev_otp"],
+                                "name": "OTP USER", "password": "pass1234"})
+        assert r.status_code == 400
+
+    def test_signup_otp_existing_email(self):
+        r = requests.post(f"{BASE_URL}/api/auth/request-signup-otp",
+                          json={"name": "X", "email": ADMIN_EMAIL, "password": "pass1234"})
+        assert r.status_code == 400
+
+    def test_reset_password_flow(self):
+        email = f"reset_{uuid.uuid4().hex[:8]}@test.dev"
+        session = requests.Session()
+        r = session.post(f"{BASE_URL}/api/auth/register",
+                         json={"name": "RESET ME", "email": email, "password": "pass1234"})
+        assert r.status_code == 200
+
+        r = requests.post(f"{BASE_URL}/api/auth/request-reset-otp",
+                          json={"email": email})
+        assert r.status_code == 200, r.text
+        otp = r.json()["dev_otp"]
+
+        # wrong code fails
+        r = requests.post(f"{BASE_URL}/api/auth/reset-password",
+                          json={"email": email, "otp": "000000", "new_password": "newpass77"})
+        assert r.status_code == 400
+
+        # correct code resets password
+        r = requests.post(f"{BASE_URL}/api/auth/reset-password",
+                          json={"email": email, "otp": otp, "new_password": "newpass77"})
+        assert r.status_code == 200, r.text
+
+        # old password no longer works, new one does
+        fresh = requests.Session()
+        assert fresh.post(f"{BASE_URL}/api/auth/login",
+                          json={"email": email, "password": "pass1234"}).status_code == 401
+        r = fresh.post(f"{BASE_URL}/api/auth/login",
+                       json={"email": email, "password": "newpass77"})
+        assert r.status_code == 200
+
+    def test_reset_otp_unknown_email(self):
+        r = requests.post(f"{BASE_URL}/api/auth/request-reset-otp",
+                          json={"email": "nobody@test.dev"})
+        assert r.status_code == 404
+
+
 # ---------- Admin users / login records tests ----------
 class TestAdminUsers:
     def test_admin_users_requires_auth(self, client):
