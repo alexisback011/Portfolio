@@ -252,7 +252,7 @@ async def login(input: LoginInput, response: Response, db: AsyncSession = Depend
     email = input.email.lower()
     user = await db.scalar(select(User).where(User.email == email))
     if not user or not verify_password(input.password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+        raise HTTPException(status_code=401, detail="Invalid credentials")
     uid = str(user.id)
     set_auth_cookies(response, create_access_token(uid, email), create_refresh_token(uid))
     return user_public(user)

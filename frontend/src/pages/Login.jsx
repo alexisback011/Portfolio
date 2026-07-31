@@ -9,10 +9,9 @@ import { PROFILE } from "../data";
 const EASE = [0.85, 0, 0.15, 1];
 
 const Login = () => {
-  const { user, login, register } = useAuth();
+  const { user, login } = useAuth();
   const navigate = useNavigate();
-  const [mode, setMode] = useState("login");
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -27,12 +26,8 @@ const Login = () => {
     setError("");
     setLoading(true);
     try {
-      if (mode === "login") {
-        await login(form.email, form.password);
-      } else {
-        await register(form.name, form.email, form.password);
-      }
-      toast.success(mode === "login" ? "Welcome back." : "Account created.");
+      await login(form.email, form.password);
+      toast.success("Welcome back.");
       navigate("/profile");
     } catch (err) {
       const msg = formatApiErrorDetail(err.response?.data?.detail) || err.message;
@@ -76,31 +71,13 @@ const Login = () => {
             data-testid="auth-title"
             className="mt-6 font-display text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none"
           >
-            {mode === "login" ? "Sign In" : "Create Account"}
+            Sign In
           </h1>
           <p className="mt-3 text-sm font-light text-muted-foreground">
-            {mode === "login"
-              ? "Access your visitor space."
-              : "Join to unlock your profile space."}
+            Access your admin space.
           </p>
 
           <form onSubmit={onSubmit} data-testid="auth-form" className="mt-10 flex flex-col gap-7">
-            {mode === "register" && (
-              <label className="block">
-                <span className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                  Name
-                </span>
-                <input
-                  name="name"
-                  value={form.name}
-                  onChange={onChange}
-                  placeholder="Your name"
-                  data-testid="auth-name"
-                  className={inputCls}
-                  required
-                />
-              </label>
-            )}
             <label className="block">
               <span className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
                 Email
@@ -148,26 +125,12 @@ const Login = () => {
                 <Loader2 size={16} className="animate-spin" />
               ) : (
                 <>
-                  {mode === "login" ? "Sign In" : "Sign Up"}
+                  Sign In
                   <ArrowUpRight size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-200" />
                 </>
               )}
             </button>
           </form>
-
-          <button
-            type="button"
-            data-testid="auth-toggle"
-            onClick={() => {
-              setMode((m) => (m === "login" ? "register" : "login"));
-              setError("");
-            }}
-            className="mt-8 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-secondary transition-colors"
-          >
-            {mode === "login"
-              ? "No account? Create one →"
-              : "Already have an account? Sign in →"}
-          </button>
         </motion.div>
       </div>
     </div>
