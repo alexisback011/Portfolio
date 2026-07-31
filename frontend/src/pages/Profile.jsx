@@ -208,15 +208,26 @@ const Profile = () => {
                   <div className="flex items-center gap-3">
                     <span className="flex items-center gap-0.5">
                       {[1, 2, 3, 4, 5].map((n) => (
-                        <Star
+                        <motion.span
                           key={n}
-                          size={12}
-                          className={
-                            n <= r.rating
-                              ? "fill-secondary text-secondary"
-                              : "fill-transparent text-white/25"
-                          }
-                        />
+                          initial={{ opacity: 0, scale: 0 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 260,
+                            damping: 16,
+                            delay: n * 0.06,
+                          }}
+                        >
+                          <Star
+                            size={12}
+                            className={`star-glitch ${
+                              n <= r.rating
+                                ? "fill-secondary text-secondary"
+                                : "fill-transparent text-white/25"
+                            }`}
+                          />
+                        </motion.span>
                       ))}
                     </span>
                     <span className="text-xs text-muted-foreground">
