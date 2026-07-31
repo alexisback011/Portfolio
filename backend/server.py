@@ -276,6 +276,10 @@ class RefreshInput(BaseModel):
 
 
 class UpdateProfileInput(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=80)
+    email: EmailStr | None = None
+    password: str | None = Field(default=None, min_length=6, max_length=128)
+    current_password: str | None = Field(default=None, max_length=128)
     profile_image: str | None = Field(default=None, max_length=2000)
 
 
@@ -456,10 +460,26 @@ async def update_me(input: UpdateProfileInput, current=Depends(get_current_user)
     user = await db.get(User, int(current["id"]))
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
-    pi = (input.profile_image or "").strip()
-    if pi and not (pi.startswith("data:image/") or pi.startswith("http://") or pi.startswith("https://")):
-        raise HTTPException(status_code=422, detail="profile_image must be a data:image URL or http(s) URL")
-    user.profile_image = pi or None
+    if input.email is not None or input.password is not None:
+        if not input.current_password or not verify_password(input.current_password, user.password_hash):
+            raise HTTPException(status_code=400, detail="Current password is incorrect")
+    if input.name is not None:
+        new_name = input.name.strip()
+        if new_name:
+            user.name = new_name
+    if input.email is not None:
+        new_email = input.email.lower()
+        existing = await db.scalar(select(User).where(User.email == new_email, User.id != user.id))
+        if existing:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        user.email = new_email
+    if input.password:
+        user.password_hash = hash_password(input.password)
+    if input.profile_image is not None:
+        pi = input.profile_image.strip()
+        if pi and not (pi.startswith("data:image/") or pi.startswith("http://") or pi.startswith("https://")):
+            raise HTTPException(status_code=422, detail="profile_image must be a data:image URL or http(s) URL")
+        user.profile_image = pi or None
     await db.commit()
     await db.refresh(user)
     return user_public(user)

@@ -13,6 +13,8 @@ import {
   Copy,
   Ban,
   ShieldCheck,
+  Settings,
+  Save,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth, formatApiErrorDetail } from "../context/AuthContext";
@@ -48,7 +50,7 @@ const resizeImage = (dataUrl, maxSize = 512) =>
   });
 
 const Profile = () => {
-  const { user, loading, logout, updateProfileImage } = useAuth();
+  const { user, loading, logout, updateProfileImage, updateProfile } = useAuth();
   const navigate = useNavigate();
   const fileRef = useRef(null);
   const [messages, setMessages] = useState([]);
@@ -60,6 +62,14 @@ const Profile = () => {
   const [expandedUser, setExpandedUser] = useState({});
   const [tab, setTab] = useState("messages");
   const [uploading, setUploading] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
+  const [pForm, setPForm] = useState({
+    name: "",
+    email: "",
+    currentPassword: "",
+    newPassword: "",
+  });
+  const [savingProfile, setSavingProfile] = useState(false);
   const isAdmin = user?.role === "admin";
 
   useEffect(() => {
@@ -160,6 +170,37 @@ const Profile = () => {
     }
   };
 
+  useEffect(() => {
+    if (user) {
+      setPForm((f) => ({ ...f, name: user.name || "", email: user.email || "" }));
+    }
+  }, [user]);
+
+  const onSaveProfile = async (e) => {
+    e.preventDefault();
+    const fields = { name: pForm.name.trim(), email: pForm.email.trim() };
+    if (pForm.newPassword) {
+      if (pForm.newPassword.length < 6) {
+        toast.error("New password must be at least 6 characters.");
+        return;
+      }
+      fields.password = pForm.newPassword;
+    }
+    if (pForm.currentPassword || fields.password || pForm.email.trim() !== user?.email) {
+      fields.current_password = pForm.currentPassword;
+    }
+    setSavingProfile(true);
+    try {
+      await updateProfile(fields);
+      setPForm((f) => ({ ...f, currentPassword: "", newPassword: "" }));
+      toast.success("Profile updated.");
+    } catch (err) {
+      toast.error(formatApiErrorDetail(err.response?.data?.detail) || "Could not update profile.");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   const onLogout = async () => {
     await logout();
     toast.success("Signed out.");
@@ -238,13 +279,26 @@ const Profile = () => {
           >
             <Home size={14} /> {PROFILE.name}
           </button>
-          <button
-            data-testid="logout-btn"
-            onClick={onLogout}
-            className="group inline-flex items-center gap-2 border border-white/20 px-5 py-3 text-xs font-bold uppercase tracking-[0.2em] hover:bg-primary hover:text-black hover:border-primary transition-colors"
-          >
-            Logout <LogOut size={14} />
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              data-testid="manage-profile-btn"
+              onClick={() => setManageOpen((v) => !v)}
+              className={`inline-flex items-center gap-2 border px-5 py-3 text-xs font-bold uppercase tracking-[0.2em] transition-colors ${
+                manageOpen
+                  ? "border-secondary bg-secondary text-black"
+                  : "border-white/20 hover:border-secondary hover:text-secondary"
+              }`}
+            >
+              <Settings size={14} /> Manage Profile
+            </button>
+            <button
+              data-testid="logout-btn"
+              onClick={onLogout}
+              className="group inline-flex items-center gap-2 border border-white/20 px-5 py-3 text-xs font-bold uppercase tracking-[0.2em] hover:bg-primary hover:text-black hover:border-primary transition-colors"
+            >
+              Logout <LogOut size={14} />
+            </button>
+          </div>
         </div>
 
         <motion.div
@@ -309,6 +363,103 @@ const Profile = () => {
             </p>
           </div>
         </motion.div>
+
+        {manageOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: EASE }}
+            className="mt-10 border border-white/15 p-8"
+            data-testid="manage-profile-panel"
+          >
+            <div className="flex items-center gap-3">
+              <Settings size={16} className="text-primary" />
+              <span className="text-xs font-bold uppercase tracking-[0.3em]">Manage Profile</span>
+              <span className="h-px flex-1 bg-white/15" />
+            </div>
+
+            <form
+              onSubmit={onSaveProfile}
+              data-testid="manage-profile-form"
+              className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-7"
+            >
+              <label className="block">
+                <span className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                  Name
+                </span>
+                <input
+                  name="name"
+                  value={pForm.name}
+                  onChange={(e) => setPForm((f) => ({ ...f, name: e.target.value }))}
+                  data-testid="manage-name"
+                  className="mt-3 w-full bg-transparent border-b-2 border-white/20 focus:border-primary outline-none py-3 text-base font-light transition-colors duration-200"
+                  required
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                  Email
+                </span>
+                <input
+                  type="email"
+                  name="email"
+                  value={pForm.email}
+                  onChange={(e) => setPForm((f) => ({ ...f, email: e.target.value }))}
+                  data-testid="manage-email"
+                  className="mt-3 w-full bg-transparent border-b-2 border-white/20 focus:border-primary outline-none py-3 text-base font-light transition-colors duration-200"
+                  required
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                  Current Password
+                </span>
+                <input
+                  type="password"
+                  name="currentPassword"
+                  value={pForm.currentPassword}
+                  onChange={(e) => setPForm((f) => ({ ...f, currentPassword: e.target.value }))}
+                  placeholder="Required to change email or password"
+                  data-testid="manage-current-password"
+                  className="mt-3 w-full bg-transparent border-b-2 border-white/20 focus:border-primary outline-none py-3 text-base font-light transition-colors duration-200"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                  New Password
+                </span>
+                <input
+                  type="password"
+                  name="newPassword"
+                  value={pForm.newPassword}
+                  onChange={(e) => setPForm((f) => ({ ...f, newPassword: e.target.value }))}
+                  placeholder="Leave blank to keep current"
+                  data-testid="manage-new-password"
+                  className="mt-3 w-full bg-transparent border-b-2 border-white/20 focus:border-primary outline-none py-3 text-base font-light transition-colors duration-200"
+                />
+              </label>
+
+              <div className="md:col-span-2 flex items-center gap-4 pt-2">
+                <button
+                  type="submit"
+                  disabled={savingProfile}
+                  data-testid="manage-save"
+                  className="inline-flex items-center gap-3 bg-primary text-black px-6 py-4 text-xs font-bold uppercase tracking-[0.25em] hover:bg-secondary disabled:opacity-60 transition-colors duration-200"
+                >
+                  <Save size={14} />
+                  {savingProfile ? "Saving..." : "Save Changes"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setManageOpen(false)}
+                  className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        )}
 
         {isAdmin && (
           <div className="mt-16 flex flex-wrap items-center gap-4">

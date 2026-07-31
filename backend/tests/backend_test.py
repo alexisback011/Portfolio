@@ -93,6 +93,53 @@ class TestAuth:
                                json={"profile_image": "not-an-image"})
         assert r.status_code == 422
 
+    def test_update_profile_fields(self, client):
+        email = f"EDIT_{uuid.uuid4().hex[:8]}@test.dev"
+        r = client.post(f"{BASE_URL}/api/auth/register",
+                        json={"name": "OLD NAME", "email": email, "password": "pass1234"})
+        assert r.status_code == 200
+        expected = email.lower()
+
+        # change name (no password needed)
+        r = client.patch(f"{BASE_URL}/api/auth/me", json={"name": "NEW NAME"})
+        assert r.status_code == 200, r.text
+        assert r.json()["name"] == "NEW NAME"
+
+        # change email (needs current password)
+        new_email = f"edit_{uuid.uuid4().hex[:8]}@test.dev"
+        r = client.patch(f"{BASE_URL}/api/auth/me",
+                         json={"email": new_email})
+        assert r.status_code == 400
+        assert "password" in r.json()["detail"].lower()
+
+        r = client.patch(f"{BASE_URL}/api/auth/me",
+                         json={"email": new_email, "current_password": "wrongpass"})
+        assert r.status_code == 400
+
+        r = client.patch(f"{BASE_URL}/api/auth/me",
+                         json={"email": new_email, "current_password": "pass1234"})
+        assert r.status_code == 200, r.text
+        assert r.json()["email"] == new_email.lower()
+
+        # email uniqueness
+        r = client.patch(f"{BASE_URL}/api/auth/me",
+                         json={"email": ADMIN_EMAIL, "current_password": "pass1234"})
+        assert r.status_code == 400
+
+        # change password (needs current password), old pass stops working
+        r = client.patch(f"{BASE_URL}/api/auth/me",
+                         json={"password": "newpass99", "current_password": "pass1234"})
+        assert r.status_code == 200, r.text
+
+        fresh = requests.Session()
+        r = fresh.post(f"{BASE_URL}/api/auth/login",
+                       json={"email": new_email.lower(), "password": "pass1234"})
+        assert r.status_code == 401
+        r = fresh.post(f"{BASE_URL}/api/auth/login",
+                       json={"email": new_email.lower(), "password": "newpass99"})
+        assert r.status_code == 200
+        assert r.json()["name"] == "NEW NAME"
+
 
 # ---------- Admin users / login records tests ----------
 class TestAdminUsers:
