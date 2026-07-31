@@ -110,15 +110,18 @@ code {
     100% { text-shadow: 2px 0 hsl(var(--secondary)), -2px 0 hsl(var(--primary)); }
 }
 
-/* Glitch effect for SVG icons (stars) */
+/* Glitch effect for SVG icons (stars) — triggers on hover */
 .star-glitch {
-    animation: starGlitch 2.8s steps(1, end) infinite;
+    transition: filter 0.15s ease;
 }
-.star-glitch:nth-child(even) {
-    animation-delay: 0.45s;
+.star-glitch:hover {
+    animation: starGlitch 0.3s steps(1, end) infinite;
 }
-.star-glitch:nth-child(3n) {
-    animation-delay: 0.9s;
+.star-glitch:nth-child(even):hover {
+    animation-delay: 0.04s;
+}
+.star-glitch:nth-child(3n):hover {
+    animation-delay: 0.08s;
 }
 @keyframes starGlitch {
     0%, 88%, 100% {
