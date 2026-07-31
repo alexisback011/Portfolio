@@ -117,13 +117,13 @@ export const Reviews = () => {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, ease: EASE, delay: 0.2 }}
-                className="mt-8 inline-flex items-center gap-3 border border-white/20 px-4 py-3 hover:border-primary transition-colors"
+                className="mt-8 inline-flex items-start gap-3 border border-white/20 px-4 py-3 hover:border-primary transition-colors"
               >
-                <span className="font-display text-sm md:text-base font-medium leading-none text-foreground">
+                <span className="pt-0.5 font-display text-sm md:text-base font-medium leading-none text-foreground">
                   {reviews.length}
                 </span>
                 <div className="space-y-1">
-                  <span className="block text-xs font-bold uppercase tracking-[0.3em] text-foreground">
+                  <span className="block text-xs font-bold uppercase leading-none tracking-[0.3em] text-foreground">
                     {reviews.length === 1 ? "review" : "reviews"}
                   </span>
                   <span className="block text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
