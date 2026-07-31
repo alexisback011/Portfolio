@@ -17,6 +17,7 @@ const Profile = () => {
   const [loadingMsgs, setLoadingMsgs] = useState(true);
   const [reviews, setReviews] = useState([]);
   const [loadingReviews, setLoadingReviews] = useState(true);
+  const [tab, setTab] = useState("messages");
 
   useEffect(() => {
     if (!loading && !user) navigate("/login");
@@ -59,6 +60,7 @@ const Profile = () => {
   };
 
   useEffect(() => {
+    if (tab !== "reviews") return;
     let cancelled = false;
     (async () => {
       try {
@@ -73,7 +75,7 @@ const Profile = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [tab]);
 
   const onDeleteReview = async (id) => {
     try {
@@ -131,126 +133,158 @@ const Profile = () => {
           </p>
         </motion.div>
 
-        <div className="mt-20 flex items-center gap-3">
-          <Mail size={16} className="text-primary" />
-          <span className="text-xs font-bold uppercase tracking-[0.3em]">Message Inbox</span>
-          <span className="h-px flex-1 bg-white/15" />
-          <span className="text-xs font-bold text-muted-foreground">{messages.length}</span>
+        <div className="mt-16 flex flex-wrap items-center gap-4">
+          {[
+            { key: "messages", label: "Messages", icon: Mail, count: messages.length },
+            { key: "reviews", label: "Reviews", icon: Star, count: reviews.length },
+          ].map((t) => (
+            <button
+              key={t.key}
+              data-testid={`tab-${t.key}`}
+              onClick={() => setTab(t.key)}
+              className={`inline-flex items-center gap-2 border px-5 py-3 text-xs font-bold uppercase tracking-[0.2em] transition-colors ${
+                tab === t.key
+                  ? "border-primary bg-primary text-black"
+                  : "border-white/20 text-muted-foreground hover:border-white/40 hover:text-foreground"
+              }`}
+            >
+              <t.icon size={14} />
+              {t.label}
+              <span className={tab === t.key ? "text-black/70" : "text-muted-foreground"}>
+                {t.count}
+              </span>
+            </button>
+          ))}
         </div>
 
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="inbox">
-          {loadingMsgs ? (
-            <p className="text-sm text-muted-foreground font-light">Loading...</p>
-          ) : messages.length === 0 ? (
-            <p className="text-sm text-muted-foreground font-light">
-              No messages yet. Submissions from the contact form appear here.
-            </p>
-          ) : (
-            messages.map((m) => (
-              <div
-                key={m.id}
-                data-testid={`message-${m.id}`}
-                className="border border-white/15 p-6 hover:border-primary transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-display font-bold uppercase tracking-tight">{m.name}</span>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(m.created_at).toLocaleDateString()}
-                    </span>
-                    <button
-                      data-testid={`delete-${m.id}`}
-                      onClick={() => onDelete(m.id)}
-                      aria-label={`Delete message from ${m.name}`}
-                      className="text-muted-foreground hover:text-red-400 transition-colors"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                </div>
-                <a
-                  href={`mailto:${m.email}`}
-                  className="mt-1 block text-xs text-secondary hover:text-primary transition-colors"
-                >
-                  {m.email}
-                </a>
-                <p className="mt-4 text-sm font-light text-muted-foreground leading-relaxed">
-                  {m.message}
+        {tab === "messages" && (
+          <div className="mt-10">
+            <div className="flex items-center gap-3">
+              <Mail size={16} className="text-primary" />
+              <span className="text-xs font-bold uppercase tracking-[0.3em]">Message Inbox</span>
+              <span className="h-px flex-1 bg-white/15" />
+              <span className="text-xs font-bold text-muted-foreground">{messages.length}</span>
+            </div>
+
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="inbox">
+              {loadingMsgs ? (
+                <p className="text-sm text-muted-foreground font-light">Loading...</p>
+              ) : messages.length === 0 ? (
+                <p className="text-sm text-muted-foreground font-light">
+                  No messages yet. Submissions from the contact form appear here.
                 </p>
-              </div>
-            ))
-          )}
-        </div>
-
-        <div className="mt-20 flex items-center gap-3">
-          <Star size={16} className="text-primary" />
-          <span className="text-xs font-bold uppercase tracking-[0.3em]">Reviews</span>
-          <span className="h-px flex-1 bg-white/15" />
-          <span className="text-xs font-bold text-muted-foreground">{reviews.length}</span>
-        </div>
-
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="reviews-inbox">
-          {loadingReviews ? (
-            <p className="text-sm text-muted-foreground font-light">Loading...</p>
-          ) : reviews.length === 0 ? (
-            <p className="text-sm text-muted-foreground font-light">
-              No reviews yet. Viewer comments appear here.
-            </p>
-          ) : (
-            reviews.map((r) => (
-              <div
-                key={r.id}
-                data-testid={`admin-review-${r.id}`}
-                className="border border-white/15 p-6 hover:border-primary transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-display font-bold uppercase tracking-tight">{r.name}</span>
-                  <div className="flex items-center gap-3">
-                    <span className="flex items-center gap-0.5">
-                      {[1, 2, 3, 4, 5].map((n) => (
-                        <motion.span
-                          key={n}
-                          initial={{ opacity: 0, scale: 0 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{
-                            type: "spring",
-                            stiffness: 260,
-                            damping: 16,
-                            delay: n * 0.06,
-                          }}
+              ) : (
+                messages.map((m) => (
+                  <div
+                    key={m.id}
+                    data-testid={`message-${m.id}`}
+                    className="border border-white/15 p-6 hover:border-primary transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-display font-bold uppercase tracking-tight">{m.name}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(m.created_at).toLocaleDateString()}
+                        </span>
+                        <button
+                          data-testid={`delete-${m.id}`}
+                          onClick={() => onDelete(m.id)}
+                          aria-label={`Delete message from ${m.name}`}
+                          className="text-muted-foreground hover:text-red-400 transition-colors"
                         >
-                          <Star
-                            size={12}
-                            strokeWidth={n <= r.rating ? 2 : 1}
-                            className={`star-glitch ${
-                              n <= r.rating
-                                ? "fill-primary text-primary"
-                                : "fill-transparent text-white/25"
-                            }`}
-                          />
-                        </motion.span>
-                      ))}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(r.created_at).toLocaleDateString()}
-                    </span>
-                    <button
-                      data-testid={`delete-review-${r.id}`}
-                      onClick={() => onDeleteReview(r.id)}
-                      aria-label={`Delete review from ${r.name}`}
-                      className="text-muted-foreground hover:text-red-400 transition-colors"
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </div>
+                    <a
+                      href={`mailto:${m.email}`}
+                      className="mt-1 block text-xs text-secondary hover:text-primary transition-colors"
                     >
-                      <Trash2 size={15} />
-                    </button>
+                      {m.email}
+                    </a>
+                    <p className="mt-4 text-sm font-light text-muted-foreground leading-relaxed">
+                      {m.message}
+                    </p>
                   </div>
-                </div>
-                <p className="mt-4 text-sm font-light text-muted-foreground leading-relaxed">
-                  {r.comment}
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {tab === "reviews" && (
+          <div className="mt-10">
+            <div className="flex items-center gap-3">
+              <Star size={16} className="text-primary" />
+              <span className="text-xs font-bold uppercase tracking-[0.3em]">Reviews</span>
+              <span className="h-px flex-1 bg-white/15" />
+              <span className="text-xs font-bold text-muted-foreground">{reviews.length}</span>
+            </div>
+
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="reviews-inbox">
+              {loadingReviews ? (
+                <p className="text-sm text-muted-foreground font-light">Loading...</p>
+              ) : reviews.length === 0 ? (
+                <p className="text-sm text-muted-foreground font-light">
+                  No reviews yet. Viewer comments appear here.
                 </p>
-              </div>
-            ))
-          )}
-        </div>
+              ) : (
+                reviews.map((r) => (
+                  <div
+                    key={r.id}
+                    data-testid={`admin-review-${r.id}`}
+                    className="border border-white/15 p-6 hover:border-primary transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-display font-bold uppercase tracking-tight">{r.name}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="flex items-center gap-0.5">
+                          {[1, 2, 3, 4, 5].map((n) => (
+                            <motion.span
+                              key={n}
+                              initial={{ opacity: 0, scale: 0 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{
+                                type: "spring",
+                                stiffness: 260,
+                                damping: 16,
+                                delay: n * 0.06,
+                              }}
+                            >
+                              <Star
+                                size={12}
+                                strokeWidth={n <= r.rating ? 2 : 1}
+                                className={`star-glitch ${
+                                  n <= r.rating
+                                    ? "fill-primary text-primary"
+                                    : "fill-transparent text-white/25"
+                                }`}
+                              />
+                            </motion.span>
+                          ))}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(r.created_at).toLocaleDateString()}
+                        </span>
+                        <button
+                          data-testid={`delete-review-${r.id}`}
+                          onClick={() => onDeleteReview(r.id)}
+                          aria-label={`Delete review from ${r.name}`}
+                          className="text-muted-foreground hover:text-red-400 transition-colors"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </div>
+                    <p className="mt-4 text-sm font-light text-muted-foreground leading-relaxed">
+                      {r.comment}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
