@@ -10,13 +10,20 @@ const EASE = [0.85, 0, 0.15, 1];
 const Stars = ({ value, size = 14 }) => (
   <div className="flex items-center gap-0.5" aria-label={`${value} out of 5 stars`}>
     {[1, 2, 3, 4, 5].map((n) => (
-      <Star
+      <motion.span
         key={n}
-        size={size}
-        className={
-          n <= value ? "fill-secondary text-secondary" : "fill-transparent text-white/25"
-        }
-      />
+        initial={{ opacity: 0, scale: 0 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        viewport={{ once: true }}
+        transition={{ type: "spring", stiffness: 260, damping: 16, delay: n * 0.06 }}
+      >
+        <Star
+          size={size}
+          className={
+            n <= value ? "fill-secondary text-secondary" : "fill-transparent text-white/25"
+          }
+        />
+      </motion.span>
     ))}
   </div>
 );
@@ -133,12 +140,15 @@ export const Reviews = () => {
               </span>
               <div className="mt-3 flex items-center gap-2" data-testid="review-rating">
                 {[1, 2, 3, 4, 5].map((n) => (
-                  <button
+                  <motion.button
                     key={n}
                     type="button"
                     aria-label={`${n} star${n > 1 ? "s" : ""}`}
                     onClick={() => setForm((f) => ({ ...f, rating: n }))}
-                    className="transition-transform duration-150 hover:scale-125"
+                    whileHover={{ scale: 1.25, rotate: n <= form.rating ? 12 : 0 }}
+                    whileTap={{ scale: 0.85 }}
+                    animate={{ scale: n <= form.rating ? 1.15 : 1 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 15 }}
                   >
                     <Star
                       size={28}
@@ -148,12 +158,9 @@ export const Reviews = () => {
                           : "fill-transparent text-white/25"
                       }
                     />
-                  </button>
+                  </motion.button>
                 ))}
               </div>
-              <span className="mt-2 block text-[10px] font-bold uppercase tracking-[0.2em] text-secondary">
-                {form.rating} star{form.rating > 1 ? "s" : ""}
-              </span>
             </div>
 
             <label className="block">
