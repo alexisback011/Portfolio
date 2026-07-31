@@ -69,11 +69,6 @@ export const Reviews = () => {
     }
   };
 
-  const average =
-    reviews.length > 0
-      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
-      : null;
-
   return (
     <section
       id="reviews"
@@ -104,17 +99,11 @@ export const Reviews = () => {
               street.
             </motion.h2>
 
-            {average && (
-              <div className="mt-6 flex items-center gap-4">
-                <span className="font-display text-4xl font-black leading-none">
-                  {average}
+            {reviews.length > 0 && (
+              <div className="mt-6">
+                <span className="block text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                  {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
                 </span>
-                <div className="space-y-1">
-                  <Stars value={Math.round(average)} size={16} />
-                  <span className="block text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                    {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
-                  </span>
-                </div>
               </div>
             )}
           </div>
