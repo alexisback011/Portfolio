@@ -12,6 +12,7 @@ const Stars = ({ value, size = 14 }) => (
     {[1, 2, 3, 4, 5].map((n) => (
       <motion.span
         key={n}
+        className={n <= value ? "star-glow" : ""}
         initial={{ opacity: 0, scale: 0 }}
         whileInView={{ opacity: 1, scale: 1 }}
         viewport={{ once: true }}
@@ -20,7 +21,7 @@ const Stars = ({ value, size = 14 }) => (
         <Star
           size={size}
           className={`star-glitch ${
-            n <= value ? "fill-secondary text-secondary" : "fill-transparent text-white/25"
+            n <= value ? "fill-primary text-primary" : "fill-transparent text-white/25"
           }`}
         />
       </motion.span>
@@ -145,6 +146,7 @@ export const Reviews = () => {
                     type="button"
                     aria-label={`${n} star${n > 1 ? "s" : ""}`}
                     onClick={() => setForm((f) => ({ ...f, rating: n }))}
+                    className={n <= form.rating ? "star-glow" : ""}
                     whileHover={{ scale: 1.25, rotate: n <= form.rating ? 12 : 0 }}
                     whileTap={{ scale: 0.85 }}
                     animate={{ scale: n <= form.rating ? 1.15 : 1 }}
@@ -154,7 +156,7 @@ export const Reviews = () => {
                       size={28}
                       className={`star-glitch ${
                         n <= form.rating
-                          ? "fill-secondary text-secondary"
+                          ? "fill-primary text-primary"
                           : "fill-transparent text-white/25"
                       }`}
                     />
