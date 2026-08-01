@@ -33,29 +33,22 @@ export const Hero = () => {
       id="top"
       ref={ref}
       data-testid="hero-section"
-      className="relative min-h-[100vh] min-h-[100dvh] w-full overflow-hidden flex flex-col justify-end"
+      className="relative min-h-screen w-full overflow-hidden flex flex-col justify-end"
     >
       {/* Parallax background */}
       <motion.div
         style={{ y: bgY, scale: bgScale }}
         className="absolute inset-0 z-0"
       >
-        <img
-          src="/anime-hero-poster.jpg"
-          alt=""
-          aria-hidden="true"
-          className="md:hidden w-full h-full object-cover"
-        />
         <video
           src="/anime-hero.mp4"
           autoPlay
           muted
           loop
           playsInline
-          preload="metadata"
-          poster="/anime-hero-poster.jpg"
+          preload="auto"
           aria-label="Anime hero animation"
-          className="hidden md:block w-full h-full object-cover"
+          className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-black/60" />
         <div className="absolute inset-0 grid-bg opacity-40" />
@@ -77,7 +70,7 @@ export const Hero = () => {
         style={{ y: textY }}
         className="relative z-10 px-6 md:px-10 pb-16 md:pb-20 mx-auto max-w-[1600px] w-full"
       >
-        <h1 className="font-display font-black uppercase tracking-tighter leading-[0.82] text-[15vw] md:text-[13vw] whitespace-nowrap">
+        <h1 className="font-display font-black uppercase tracking-tighter leading-[0.82] text-[18vw] md:text-[13vw]">
           <Line delay={0.2}>{PROFILE.roles[0]}</Line>
           <Line delay={0.35} className="text-stroke-primary">
             {PROFILE.roles[1]}
