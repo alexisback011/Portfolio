@@ -516,6 +516,39 @@ class TestReview:
         r = admin_client.delete(f"{BASE_URL}/api/review/{created['id']}")
         assert r.status_code == 404
 
+    def test_my_reviews_requires_auth(self):
+        r = requests.get(f"{BASE_URL}/api/review/me")
+        assert r.status_code == 401
+
+    def test_my_reviews_and_edit(self):
+        session, reg = self._review_user()
+        created = session.post(f"{BASE_URL}/api/review",
+                               json={"rating": 4, "comment": "edit me"}).json()
+
+        # my list shows it
+        r = session.get(f"{BASE_URL}/api/review/me")
+        assert r.status_code == 200
+        assert any(m["id"] == created["id"] for m in r.json())
+
+        # edit own review
+        r = session.patch(f"{BASE_URL}/api/review/{created['id']}",
+                          json={"rating": 2, "comment": "edited now"})
+        assert r.status_code == 200, r.text
+        updated = r.json()
+        assert updated["rating"] == 2
+        assert updated["comment"] == "edited now"
+
+        # another user cannot edit it
+        other, _ = self._review_user()
+        r = other.patch(f"{BASE_URL}/api/review/{created['id']}",
+                        json={"rating": 5, "comment": "hijack"})
+        assert r.status_code == 403
+
+        # editing a missing review -> 404
+        r = session.patch(f"{BASE_URL}/api/review/nope",
+                          json={"rating": 5, "comment": "x"})
+        assert r.status_code == 404
+
 
 # ---------- NSFW moderation tests ----------
 class TestNsfwModeration:

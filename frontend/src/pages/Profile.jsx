@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Settings,
   Save,
+  Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth, formatApiErrorDetail } from "../context/AuthContext";
@@ -72,6 +73,11 @@ const Profile = () => {
   const [savingProfile, setSavingProfile] = useState(false);
   const [review, setReview] = useState({ rating: 5, comment: "" });
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [myReviews, setMyReviews] = useState([]);
+  const [loadingMyReviews, setLoadingMyReviews] = useState(true);
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({ rating: 5, comment: "" });
+  const [savingEdit, setSavingEdit] = useState(false);
   const isAdmin = user?.role === "admin";
 
   useEffect(() => {
@@ -239,11 +245,56 @@ const Profile = () => {
         { withCredentials: true }
       );
       setReview({ rating: 5, comment: "" });
+      loadMyReviews();
       toast.success("Review posted. Thanks for the feedback!");
     } catch {
       toast.error("Could not post review.");
     } finally {
       setSubmittingReview(false);
+    }
+  };
+
+  const loadMyReviews = async () => {
+    try {
+      const { data } = await axios.get(`${API}/review/me`, { withCredentials: true });
+      setMyReviews(data);
+    } catch {
+      setMyReviews([]);
+    } finally {
+      setLoadingMyReviews(false);
+    }
+  };
+
+  useEffect(() => {
+    loadMyReviews();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  const onStartEdit = (r) => {
+    setEditingId(r.id);
+    setEditForm({ rating: r.rating, comment: r.comment });
+  };
+
+  const onSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!editForm.comment.trim()) {
+      toast.error("Please add a comment.");
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      const { data } = await axios.patch(
+        `${API}/review/${editingId}`,
+        { rating: editForm.rating, comment: editForm.comment },
+        { withCredentials: true }
+      );
+      setMyReviews((prev) => prev.map((r) => (r.id === data.id ? data : r)));
+      setEditingId(null);
+      toast.success("Review updated.");
+    } catch (err) {
+      toast.error(formatApiErrorDetail(err.response?.data?.detail) || "Could not update review.");
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -573,6 +624,123 @@ const Profile = () => {
                 )}
               </button>
             </form>
+
+            <div className="mt-10 border-t border-white/10 pt-8">
+              <div className="flex items-center gap-3">
+                <Star size={16} className="text-secondary" />
+                <span className="text-xs font-bold uppercase tracking-[0.3em]">Your Reviews</span>
+                <span className="h-px flex-1 bg-white/15" />
+                <span className="text-xs font-bold text-muted-foreground">{myReviews.length}</span>
+              </div>
+
+              <div className="mt-6 flex flex-col gap-4" data-testid="my-reviews">
+                {loadingMyReviews ? (
+                  <p className="text-sm font-light text-muted-foreground">Loading...</p>
+                ) : myReviews.length === 0 ? (
+                  <p className="text-sm font-light text-muted-foreground">
+                    You haven&apos;t posted any reviews yet.
+                  </p>
+                ) : (
+                  myReviews.map((r) =>
+                    editingId === r.id ? (
+                      <form
+                        key={r.id}
+                        onSubmit={onSaveEdit}
+                        data-testid={`edit-review-${r.id}`}
+                        className="border border-white/15 p-6"
+                      >
+                        <div className="flex items-center gap-2">
+                          {[1, 2, 3, 4, 5].map((n) => (
+                            <button
+                              key={n}
+                              type="button"
+                              aria-label={`${n} star${n > 1 ? "s" : ""}`}
+                              onClick={() => setEditForm((f) => ({ ...f, rating: n }))}
+                              className="transition-transform hover:scale-125"
+                            >
+                              <Star
+                                size={20}
+                                strokeWidth={n <= editForm.rating ? 2 : 1}
+                                className={
+                                  n <= editForm.rating
+                                    ? "fill-primary text-primary"
+                                    : "fill-transparent text-white/25"
+                                }
+                              />
+                            </button>
+                          ))}
+                          <span className="ml-auto text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                            Editing
+                          </span>
+                        </div>
+                        <textarea
+                          value={editForm.comment}
+                          onChange={(e) => setEditForm((f) => ({ ...f, comment: e.target.value }))}
+                          rows={2}
+                          data-testid={`edit-comment-${r.id}`}
+                          className="mt-4 w-full bg-transparent border-b-2 border-white/20 focus:border-primary outline-none py-2 text-sm font-light resize-none transition-colors duration-200"
+                        />
+                        <div className="mt-4 flex items-center gap-4">
+                          <button
+                            type="submit"
+                            disabled={savingEdit}
+                            data-testid={`edit-save-${r.id}`}
+                            className="bg-primary text-black px-5 py-2.5 text-xs font-bold uppercase tracking-[0.25em] hover:bg-secondary disabled:opacity-60 transition-colors"
+                          >
+                            {savingEdit ? "Saving..." : "Save"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingId(null)}
+                            className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <div
+                        key={r.id}
+                        data-testid={`my-review-${r.id}`}
+                        className="border border-white/15 p-6 hover:border-primary transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-0.5">
+                            {[1, 2, 3, 4, 5].map((n) => (
+                              <Star
+                                key={n}
+                                size={14}
+                                strokeWidth={n <= r.rating ? 2 : 1}
+                                className={
+                                  n <= r.rating
+                                    ? "fill-primary text-primary"
+                                    : "fill-transparent text-white/25"
+                                }
+                              />
+                            ))}
+                          </span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(r.created_at).toLocaleDateString()}
+                            </span>
+                            <button
+                              onClick={() => onStartEdit(r)}
+                              data-testid={`edit-review-btn-${r.id}`}
+                              className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-secondary hover:text-primary transition-colors"
+                            >
+                              <Pencil size={12} /> Edit
+                            </button>
+                          </div>
+                        </div>
+                        <p className="mt-4 text-sm font-light text-muted-foreground leading-relaxed">
+                          &quot;{r.comment}&quot;
+                        </p>
+                      </div>
+                    )
+                  )
+                )}
+              </div>
+            </div>
         </motion.div>
 
         {isAdmin && (

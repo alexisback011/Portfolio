@@ -1067,6 +1067,38 @@ async def list_reviews(db: AsyncSession = Depends(get_db)):
              "profile_image": r.profile_image} for r in rows]
 
 
+@api_router.get("/review/me", response_model=List[ReviewOut])
+async def my_reviews(current=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    uid = int(current["id"])
+    stmt = select(Review).where(Review.user_id == uid).order_by(Review.created_at.desc())
+    rows = (await db.scalars(stmt)).all()
+    return [{"id": r.id, "name": r.name, "rating": r.rating,
+             "comment": r.comment, "created_at": r.created_at,
+             "profile_image": r.profile_image} for r in rows]
+
+
+@api_router.patch("/review/{review_id}", response_model=ReviewOut)
+async def update_review(review_id: str, input: ReviewCreate,
+                        current=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    review = await db.get(Review, review_id)
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    user = await db.get(User, int(current["id"]))
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    if review.user_id != user.id and user.role != "admin":
+        raise HTTPException(status_code=403, detail="You can only edit your own reviews")
+    review.rating = input.rating
+    review.comment = input.comment.strip()
+    review.name = user.name
+    review.profile_image = user.profile_image
+    await db.commit()
+    await db.refresh(review)
+    return {"id": review.id, "name": review.name, "rating": review.rating,
+            "comment": review.comment, "created_at": review.created_at,
+            "profile_image": review.profile_image}
+
+
 @api_router.delete("/review/{review_id}")
 async def delete_review(review_id: str, admin=Depends(require_admin), db: AsyncSession = Depends(get_db)):
     review = await db.get(Review, review_id)
