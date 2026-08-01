@@ -170,7 +170,6 @@
         </div>
         <div style="display:flex;align-items:center;gap:14px;">
           <span id="whoami" style="font-size:11px;color:var(--muted);"></span>
-          <a class="btn btn-ghost btn-sm" id="apkBtn" href="AlexAdmin.apk" download>APK</a>
           <button class="btn btn-ghost btn-sm" id="logoutBtn">Logout</button>
         </div>
       </header>
@@ -198,14 +197,6 @@
     return (localStorage.getItem("alex_admin_api") || DEFAULT_API).replace(/\/$/, "");
   }
   var API = resolveApi();
-
-  (function setApkUrl() {
-    var btn = document.getElementById("apkBtn");
-    if (!btn) return;
-    var hosted = "https://alex-admin-panel.onrender.com/AlexAdmin.apk";
-    btn.href = window.location.protocol === "file:" ? hosted : "AlexAdmin.apk";
-    btn.setAttribute("download", "");
-  })();
 
   var $ = function (id) { return document.getElementById(id); };
   var state = { tab: "profiles", users: [], messages: [], reviews: [], expanded: {} };
