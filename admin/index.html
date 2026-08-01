@@ -102,6 +102,20 @@
   .tab.active { background: var(--primary); color: #000; border-color: var(--primary); }
   .tab .count { margin-left: 8px; opacity: .7; }
 
+  /* database overview */
+  .overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 24px; }
+  .stat {
+    font-family: inherit; cursor: pointer; text-align: left;
+    background: var(--card); border: 1px solid var(--line); padding: 14px 16px;
+    transition: border-color .2s, background .2s;
+  }
+  .stat:hover { border-color: var(--primary); }
+  .stat.active { border-color: var(--primary); background: rgba(255,0,89,.08); }
+  .stat-num { display: block; font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 22px; color: var(--fg); line-height: 1; }
+  .stat.active .stat-num { color: var(--primary); }
+  .stat-label { display: block; margin-top: 6px; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+  .stat-label .sig { color: var(--primary); }
+
   .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
   .toolbar h2 { font-family: 'Unbounded', sans-serif; font-size: 16px; text-transform: uppercase; letter-spacing: 1px; }
   .toolbar .sub { font-size: 10px; color: var(--dim); margin-top: 4px; letter-spacing: 1px; }
@@ -124,6 +138,11 @@
   .role.admin { color: var(--primary); }
   .role.user { color: var(--secondary); }
   .chip { font-size: 9px; letter-spacing: 2px; font-weight: 700; padding: 3px 6px; border: 1px solid #7f1d1d; color: #f87171; text-transform: uppercase; }
+  .status { font-size: 9px; letter-spacing: 2px; font-weight: 700; text-transform: uppercase; }
+  .status.used { color: var(--primary); }
+  .status.expired { color: #f87171; }
+  .status.active { color: var(--secondary); }
+  .purpose { font-size: 9px; letter-spacing: 2px; font-weight: 700; padding: 3px 6px; border: 1px solid var(--line); color: var(--secondary); text-transform: uppercase; }
   .card-body { padding: 0 16px 16px; }
   .stars { color: var(--primary); letter-spacing: 2px; font-size: 14px; }
   .txt { font-size: 13px; color: var(--muted); font-weight: 300; line-height: 1.6; margin-top: 8px; }
@@ -200,10 +219,20 @@
         </div>
       </header>
 
+      <div class="overview" id="overview">
+        <button class="stat active" data-tab="profiles"><span class="stat-num" id="ovProfiles">–</span><span class="stat-label">Profiles</span></button>
+        <button class="stat" data-tab="reviews"><span class="stat-num" id="ovReviews">–</span><span class="stat-label">Reviews</span></button>
+        <button class="stat" data-tab="messages"><span class="stat-num" id="ovMessages">–</span><span class="stat-label">Messages</span></button>
+        <button class="stat" data-tab="logins"><span class="stat-num" id="ovLogins">–</span><span class="stat-label">Logins</span></button>
+        <button class="stat" data-tab="otps"><span class="stat-num" id="ovOtps">–</span><span class="stat-label">OTP <span class="sig">Codes</span></span></button>
+      </div>
+
       <div class="tabs" id="tabs">
         <button class="tab active" data-tab="profiles">Profiles <span class="count" id="cntProfiles">–</span></button>
         <button class="tab" data-tab="messages">Messages <span class="count" id="cntMessages">–</span></button>
         <button class="tab" data-tab="reviews">Reviews <span class="count" id="cntReviews">–</span></button>
+        <button class="tab" data-tab="logins">Logins <span class="count" id="cntLogins">–</span></button>
+        <button class="tab" data-tab="otps">OTP <span class="count" id="cntOtps">–</span></button>
       </div>
 
       <div id="panel"></div>
@@ -225,7 +254,7 @@
   var API = resolveApi();
 
   var $ = function (id) { return document.getElementById(id); };
-  var state = { tab: "profiles", users: [], messages: [], reviews: [], expanded: {} };
+  var state = { tab: "profiles", users: [], messages: [], reviews: [], logins: [], otps: [], expanded: {} };
 
   function toast(msg, isError) {
     var t = document.createElement("div");
@@ -312,14 +341,24 @@
   }
 
   /* ---------- tabs ---------- */
+  function switchTab(tab) {
+    state.tab = tab;
+    document.querySelectorAll(".tab").forEach(function (x) {
+      x.classList.toggle("active", x.getAttribute("data-tab") === tab);
+    });
+    document.querySelectorAll(".stat").forEach(function (x) {
+      x.classList.toggle("active", x.getAttribute("data-tab") === tab);
+    });
+    render();
+    load(tab);
+  }
   $("tabs").addEventListener("click", function (e) {
     var b = e.target.closest(".tab");
-    if (!b) return;
-    document.querySelectorAll(".tab").forEach(function (x) { x.classList.remove("active"); });
-    b.classList.add("active");
-    state.tab = b.getAttribute("data-tab");
-    render();
-    load(state.tab);
+    if (b) switchTab(b.getAttribute("data-tab"));
+  });
+  $("overview").addEventListener("click", function (e) {
+    var b = e.target.closest(".stat");
+    if (b) switchTab(b.getAttribute("data-tab"));
   });
 
   function boot() {
@@ -335,6 +374,10 @@
       req("GET", "/contact").then(function (d) { state.messages = d; render(); }).catch(onLoadError);
     } else if (tab === "reviews") {
       req("GET", "/review").then(function (d) { state.reviews = d; render(); }).catch(onLoadError);
+    } else if (tab === "logins") {
+      req("GET", "/admin/logins").then(function (d) { state.logins = d; render(); }).catch(onLoadError);
+    } else if (tab === "otps") {
+      req("GET", "/admin/otps").then(function (d) { state.otps = d; render(); }).catch(onLoadError);
     }
   }
 
@@ -431,10 +474,20 @@
     $("cntProfiles").textContent = state.users.length;
     $("cntMessages").textContent = state.messages.length;
     $("cntReviews").textContent = state.reviews.length;
+    $("cntLogins").textContent = state.logins.length;
+    $("cntOtps").textContent = state.otps.length;
+
+    $("ovProfiles").textContent = state.users.length;
+    $("ovReviews").textContent = state.reviews.length;
+    $("ovMessages").textContent = state.messages.length;
+    $("ovLogins").textContent = state.logins.length;
+    $("ovOtps").textContent = state.otps.length;
 
     if (state.tab === "profiles") renderUsers();
     else if (state.tab === "messages") renderMessages();
-    else renderReviews();
+    else if (state.tab === "reviews") renderReviews();
+    else if (state.tab === "logins") renderLogins();
+    else renderOtps();
   }
 
   function renderUsers() {
@@ -521,6 +574,58 @@
           '<div class="meta" style="text-align:right;">' + fmt(r.created_at) + "</div></div>" +
           '<div class="card-body"><p class="txt">' + esc(r.comment) + "</p>" +
           '<div class="actions"><button class="btn btn-danger btn-sm" onclick="_delReview(\'' + r.id + '\')">Delete</button></div></div></div>';
+    });
+    p.innerHTML += html + "</div>";
+  }
+
+  function renderLogins() {
+    var p = $("panel");
+    p.innerHTML = '<div class="toolbar"><div><h2>Login Records</h2><div class="sub">' + state.logins.length + " total \u00b7 syncs every 10s</div></div></div>";
+    if (state.logins.length === 0) { p.innerHTML += '<div class="empty">No login records yet. Sign-ins appear here in real time.</div>'; return; }
+    var html = '<div class="grid">';
+    state.logins.forEach(function (l) {
+      html +=
+        '<div class="card"><div class="card-head"><div class="who">' +
+          '<div class="avatar">' + esc((l.email || "?")[0].toUpperCase()) + "</div>" +
+          "<div>" +
+            '<div class="name">' + esc(l.email) + "</div>" +
+            '<div class="meta">' + esc(l.ip_address || "unknown ip") + (l.device ? " \u00b7 " + esc(l.device) : "") + "</div>" +
+          "</div></div>" +
+          '<div class="meta" style="text-align:right;">' + fmt(l.created_at) + "</div>" +
+        "</div>" +
+        (l.user_agent
+          ? '<div class="subrow"><span>Device</span><span class="grow"><code class="mono">' + esc(l.user_agent) + "</code></span></div>"
+          : "") +
+        "</div>";
+    });
+    p.innerHTML += html + "</div>";
+  }
+
+  function renderOtps() {
+    var p = $("panel");
+    p.innerHTML = '<div class="toolbar"><div><h2>OTP Codes</h2><div class="sub">' + state.otps.length + " total \u00b7 syncs every 10s</div></div></div>";
+    if (state.otps.length === 0) { p.innerHTML += '<div class="empty">No OTP records yet. Sign-up and password-reset codes appear here.</div>'; return; }
+    var now = Date.now();
+    var html = '<div class="grid">';
+    state.otps.forEach(function (o) {
+      var expired = new Date(o.expires_at).getTime() < now;
+      var status = o.used
+        ? '<span class="status used">Used</span>'
+        : (expired ? '<span class="status expired">Expired</span>' : '<span class="status active">Active</span>');
+      html +=
+        '<div class="card"><div class="card-head"><div class="who">' +
+          '<div class="avatar">' + esc((o.email || "?")[0].toUpperCase()) + "</div>" +
+          "<div>" +
+            '<div class="name">' + esc(o.email) + "</div>" +
+            '<div><span class="purpose">' + esc(o.purpose) + "</span> \u00b7 " + status + "</div>" +
+          "</div></div>" +
+          '<div class="meta" style="text-align:right;">' + fmt(o.created_at) + "</div>" +
+        "</div>" +
+        '<div class="subrow"><span>Hash</span><span class="grow"><code class="mono">' + esc(o.code_hash) + "</code></span>" +
+          '<button class="btn btn-ghost btn-sm" onclick="_copy(\'' + esc(o.code_hash).replace(/'/g, "\\'") + '\',\'OTP Hash\')">Copy</button></div>' +
+        '<div class="subrow"><span>Expires</span><span>' + fmt(o.expires_at) + "</span></div>" +
+        '<div class="subrow"><span>Attempts</span><span>' + o.attempts + "</span></div>" +
+        "</div>";
     });
     p.innerHTML += html + "</div>";
   }
