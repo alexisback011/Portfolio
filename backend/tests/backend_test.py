@@ -179,9 +179,11 @@ class TestEmailOtp:
         assert r.status_code == 400
 
     def test_signup_otp_existing_email(self):
+        # requesting a signup OTP for an already-used email is allowed
         r = requests.post(f"{BASE_URL}/api/auth/request-signup-otp",
                           json={"name": "X", "email": ADMIN_EMAIL, "password": "pass1234"})
-        assert r.status_code == 400
+        assert r.status_code == 200
+        assert r.json().get("skip_otp") is True
 
     def test_reset_password_flow(self):
         email = f"reset_{uuid.uuid4().hex[:8]}@test.dev"
@@ -375,10 +377,12 @@ class TestAdminBan:
         assert r.status_code == 200
         assert r.json()["email"] == expected
 
-        # duplicate register
+        # same email can create another account
         r = client.post(f"{BASE_URL}/api/auth/register",
                         json={"name": "dup", "email": email, "password": "pass1234"})
-        assert r.status_code == 400
+        assert r.status_code == 200, r.text
+        assert r.json()["email"] == expected
+        assert r.json()["id"] != data["id"]
 
         # logout clears cookies
         r = client.post(f"{BASE_URL}/api/auth/logout")
@@ -386,6 +390,39 @@ class TestAdminBan:
         # after logout, /me should be 401
         fresh = requests.Session()
         r = fresh.get(f"{BASE_URL}/api/auth/me")
+        assert r.status_code == 401
+
+    def test_same_email_multiple_accounts(self, client):
+        email = f"multi_{uuid.uuid4().hex[:8]}@test.dev"
+        r1 = client.post(f"{BASE_URL}/api/auth/register",
+                         json={"name": "First", "email": email, "password": "pass1111"})
+        assert r1.status_code == 200, r1.text
+        id1 = r1.json()["id"]
+
+        r2 = client.post(f"{BASE_URL}/api/auth/register",
+                         json={"name": "Second", "email": email, "password": "pass2222"})
+        assert r2.status_code == 200, r2.text
+        id2 = r2.json()["id"]
+        assert id1 != id2
+
+        # each password signs into its own account
+        s1 = requests.Session()
+        r = s1.post(f"{BASE_URL}/api/auth/login",
+                    json={"email": email, "password": "pass1111"})
+        assert r.status_code == 200, r.text
+        assert r.json()["id"] == id1
+        assert r.json()["name"] == "First"
+
+        s2 = requests.Session()
+        r = s2.post(f"{BASE_URL}/api/auth/login",
+                    json={"email": email, "password": "pass2222"})
+        assert r.status_code == 200, r.text
+        assert r.json()["id"] == id2
+        assert r.json()["name"] == "Second"
+
+        # wrong password still rejected
+        r = requests.post(f"{BASE_URL}/api/auth/login",
+                          json={"email": email, "password": "nope"})
         assert r.status_code == 401
 
     def test_bearer_token_works(self, client):

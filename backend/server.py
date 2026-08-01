@@ -24,7 +24,6 @@ import jwt
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from sqlalchemy import String, Integer, Boolean, DateTime, select, text, delete
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from starlette.middleware.cors import CORSMiddleware
@@ -61,7 +60,7 @@ class User(Base):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(80), nullable=False)
-    email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
+    email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="user")
     is_banned: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -573,6 +572,16 @@ async def init_db():
             await conn.execute(text("ALTER TABLE reviews ADD COLUMN profile_image VARCHAR(2000)"))
     except Exception:
         pass
+    # allow multiple accounts to share an email: drop any legacy unique index/constraint
+    for stmt in (
+        "DROP INDEX IF EXISTS ix_users_email",
+        "ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key",
+    ):
+        try:
+            async with engine.begin() as conn:
+                await conn.execute(text(stmt))
+        except Exception:
+            pass
     admin_email = os.environ.get("ADMIN_EMAIL", "").strip().lower()
     admin_password = os.environ.get("ADMIN_PASSWORD", "")
     if not admin_email or not admin_password:
@@ -785,15 +794,11 @@ async def register(input: RegisterInput, request: Request, response: Response,
                    db: AsyncSession = Depends(get_db)):
     email = input.email.lower()
     check_name_clean(input.name)
-    try:
-        user = User(name=input.name, email=email,
-                    password_hash=hash_password(input.password), role="user")
-        db.add(user)
-        await db.commit()
-        await db.refresh(user)
-    except IntegrityError:
-        await db.rollback()
-        raise HTTPException(status_code=400, detail="Email already registered")
+    user = User(name=input.name, email=email,
+                password_hash=hash_password(input.password), role="user")
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
     uid = str(user.id)
     access = create_access_token(uid, email)
     refresh = create_refresh_token(uid)
@@ -806,9 +811,6 @@ async def register(input: RegisterInput, request: Request, response: Response,
 async def request_signup_otp(input: RequestSignupOtpInput, db: AsyncSession = Depends(get_db)):
     email = input.email.lower()
     check_name_clean(input.name)
-    existing = await db.scalar(select(User).where(User.email == email))
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
     if is_admin_email(email):
         return {"message": "Admin accounts don't require email verification",
                 "email": email, "skip_otp": True}
@@ -842,9 +844,6 @@ async def verify_signup_otp(input: VerifySignupInput, request: Request, response
     check_name_clean(input.name)
     if not is_admin_email(email) and not await verify_otp(db, email, "signup", input.otp):
         raise HTTPException(status_code=400, detail="Invalid or expired verification code")
-    existing = await db.scalar(select(User).where(User.email == email))
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
     user = User(name=input.name, email=email,
                 password_hash=hash_password(input.password), role="user")
     db.add(user)
@@ -892,10 +891,12 @@ async def reset_password(input: ResetPasswordInput, db: AsyncSession = Depends(g
     email = input.email.lower()
     if not await verify_otp(db, email, "reset", input.otp):
         raise HTTPException(status_code=400, detail="Invalid or expired reset code")
-    user = await db.scalar(select(User).where(User.email == email))
-    if not user:
+    users = (await db.scalars(select(User).where(User.email == email))).all()
+    if not users:
         raise HTTPException(status_code=404, detail="No account found with that email")
-    user.password_hash = hash_password(input.new_password)
+    new_hash = hash_password(input.new_password)
+    for u in users:
+        u.password_hash = new_hash
     await db.commit()
     return {"message": "Password updated. You can now sign in."}
 
@@ -904,8 +905,10 @@ async def reset_password(input: ResetPasswordInput, db: AsyncSession = Depends(g
 async def login(input: LoginInput, request: Request, response: Response,
                 db: AsyncSession = Depends(get_db)):
     email = input.email.lower()
-    user = await db.scalar(select(User).where(User.email == email))
-    if not user or not verify_password(input.password, user.password_hash):
+    users = (await db.scalars(
+        select(User).where(User.email == email).order_by(User.id))).all()
+    user = next((u for u in users if verify_password(input.password, u.password_hash)), None)
+    if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     if user.is_banned:
         raise HTTPException(status_code=403, detail="Account is banned")
