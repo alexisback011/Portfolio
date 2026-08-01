@@ -471,12 +471,11 @@ const Profile = () => {
               </div>
               <div>
                 <span className="text-xs font-bold uppercase tracking-[0.3em] text-primary">
-                  Alex Admin App
+                  𝙰𝚕𝚎𝚡シ
                 </span>
                 <p className="mt-1 text-sm font-light text-muted-foreground">
                   Get the Android app to manage the portfolio on the go.
-                </p>
-              </div>
+                </p>              </div>
             </div>
             <a
               href="/AlexAdmin.apk"
