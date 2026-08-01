@@ -479,7 +479,7 @@ const Profile = () => {
               </div>
             </div>
             <a
-              href="https://alex-admin-panel.onrender.com/AlexAdmin.apk"
+              href="/AlexAdmin.apk"
               download
               data-testid="apk-download-btn"
               className="inline-flex items-center justify-center gap-3 bg-primary text-black px-6 py-4 text-xs font-bold uppercase tracking-[0.25em] hover:bg-secondary transition-colors duration-200 shrink-0"
