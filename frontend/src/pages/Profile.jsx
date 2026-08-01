@@ -63,7 +63,6 @@ const Profile = () => {
   const [expandedUser, setExpandedUser] = useState({});
   const [tab, setTab] = useState("profiles");
   const [uploading, setUploading] = useState(false);
-  const [manageOpen, setManageOpen] = useState(false);
   const [pForm, setPForm] = useState({
     name: "",
     email: "",
@@ -298,6 +297,17 @@ const Profile = () => {
     }
   };
 
+  const onDeleteMyReview = async (id) => {
+    if (!window.confirm("Delete this review permanently?")) return;
+    try {
+      await axios.delete(`${API}/review/${id}`, { withCredentials: true });
+      setMyReviews((prev) => prev.filter((r) => r.id !== id));
+      toast.success("Review deleted.");
+    } catch (err) {
+      toast.error(formatApiErrorDetail(err.response?.data?.detail) || "Could not delete review.");
+    }
+  };
+
   const onDelete = async (id) => {
     try {
       await axios.delete(`${API}/contact/${id}`, { withCredentials: true });
@@ -372,17 +382,6 @@ const Profile = () => {
           </button>
           <div className="flex items-center gap-3">
             <button
-              data-testid="manage-profile-btn"
-              onClick={() => setManageOpen((v) => !v)}
-              className={`inline-flex items-center gap-2 border px-5 py-3 text-xs font-bold uppercase tracking-[0.2em] transition-colors ${
-                manageOpen
-                  ? "border-secondary bg-secondary text-black"
-                  : "border-white/20 hover:border-secondary hover:text-secondary"
-              }`}
-            >
-              <Settings size={14} /> Manage Profile
-            </button>
-            <button
               data-testid="logout-btn"
               onClick={onLogout}
               className="group inline-flex items-center gap-2 border border-white/20 px-5 py-3 text-xs font-bold uppercase tracking-[0.2em] hover:bg-primary hover:text-black hover:border-primary transition-colors"
@@ -455,12 +454,12 @@ const Profile = () => {
           </div>
         </motion.div>
 
-        {manageOpen && (
+        <div className="mt-16 grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: EASE }}
-            className="mt-10 border border-white/15 p-8"
+            className="border border-white/15 p-8"
             data-testid="manage-profile-panel"
           >
             <div className="flex items-center gap-3">
@@ -540,25 +539,17 @@ const Profile = () => {
                   <Save size={14} />
                   {savingProfile ? "Saving..." : "Save Changes"}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setManageOpen(false)}
-                  className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Cancel
-                </button>
               </div>
             </form>
           </motion.div>
-        )}
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: EASE }}
-          className="mt-10 border border-white/15 p-8"
-          data-testid="dashboard-review-section"
-        >
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: EASE }}
+            className="border border-white/15 p-8"
+            data-testid="dashboard-review-section"
+          >
             <div className="flex items-center gap-3">
               <Star size={16} className="text-primary" />
               <span className="text-xs font-bold uppercase tracking-[0.3em]">Submit Review</span>
@@ -625,13 +616,22 @@ const Profile = () => {
               </button>
             </form>
 
-            <div className="mt-10 border-t border-white/10 pt-8">
-              <div className="flex items-center gap-3">
-                <Star size={16} className="text-secondary" />
-                <span className="text-xs font-bold uppercase tracking-[0.3em]">Your Reviews</span>
-                <span className="h-px flex-1 bg-white/15" />
-                <span className="text-xs font-bold text-muted-foreground">{myReviews.length}</span>
-              </div>
+          </motion.div>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: EASE }}
+          className="mt-10 border border-white/15 p-8"
+          data-testid="my-reviews-section"
+        >
+          <div className="flex items-center gap-3">
+            <Star size={16} className="text-secondary" />
+            <span className="text-xs font-bold uppercase tracking-[0.3em]">My Reviews</span>
+            <span className="h-px flex-1 bg-white/15" />
+            <span className="text-xs font-bold text-muted-foreground">{myReviews.length}</span>
+          </div>
 
               <div className="mt-6 flex flex-col gap-4" data-testid="my-reviews">
                 {loadingMyReviews ? (
@@ -730,6 +730,14 @@ const Profile = () => {
                             >
                               <Pencil size={12} /> Edit
                             </button>
+                            <button
+                              onClick={() => onDeleteMyReview(r.id)}
+                              data-testid={`delete-my-review-${r.id}`}
+                              aria-label="Delete review"
+                              className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-destructive transition-colors"
+                            >
+                              <Trash2 size={12} /> Delete
+                            </button>
                           </div>
                         </div>
                         <p className="mt-4 text-sm font-light text-muted-foreground leading-relaxed">
@@ -740,7 +748,6 @@ const Profile = () => {
                   )
                 )}
               </div>
-            </div>
         </motion.div>
 
         {isAdmin && (

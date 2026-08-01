@@ -1100,10 +1100,15 @@ async def update_review(review_id: str, input: ReviewCreate,
 
 
 @api_router.delete("/review/{review_id}")
-async def delete_review(review_id: str, admin=Depends(require_admin), db: AsyncSession = Depends(get_db)):
+async def delete_review(review_id: str, current=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     review = await db.get(Review, review_id)
     if not review:
         raise HTTPException(status_code=404, detail="Review not found")
+    user = await db.get(User, int(current["id"]))
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    if review.user_id != user.id and user.role != "admin":
+        raise HTTPException(status_code=403, detail="You can only delete your own reviews")
     await db.delete(review)
     await db.commit()
     return {"message": "Review deleted"}

@@ -549,6 +549,32 @@ class TestReview:
                           json={"rating": 5, "comment": "x"})
         assert r.status_code == 404
 
+    def test_my_reviews_delete(self):
+        session, _ = self._review_user()
+        created = session.post(f"{BASE_URL}/api/review",
+                               json={"rating": 3, "comment": "delete me"}).json()
+
+        # owner can delete their own review
+        r = session.delete(f"{BASE_URL}/api/review/{created['id']}")
+        assert r.status_code == 200, r.text
+
+        # gone from my list and public list
+        r = session.get(f"{BASE_URL}/api/review/me")
+        assert all(m["id"] != created["id"] for m in r.json())
+        r = requests.get(f"{BASE_URL}/api/review")
+        assert all(m["id"] != created["id"] for m in r.json())
+
+        # another user cannot delete it
+        other, _ = self._review_user()
+        owned = session.post(f"{BASE_URL}/api/review",
+                             json={"rating": 4, "comment": "mine"}).json()
+        r = other.delete(f"{BASE_URL}/api/review/{owned['id']}")
+        assert r.status_code == 403
+
+        # deleting a missing review -> 404
+        r = session.delete(f"{BASE_URL}/api/review/nope")
+        assert r.status_code == 404
+
 
 # ---------- NSFW moderation tests ----------
 class TestNsfwModeration:
