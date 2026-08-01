@@ -62,6 +62,7 @@ const Profile = () => {
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [expandedUser, setExpandedUser] = useState({});
   const [tab, setTab] = useState("profiles");
+  const [userTab, setUserTab] = useState("manage");
   const [uploading, setUploading] = useState(false);
   const [pForm, setPForm] = useState({
     name: "",
@@ -454,12 +455,39 @@ const Profile = () => {
           </div>
         </motion.div>
 
-        <div className="mt-16 grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
+        <div className="mt-16 flex flex-wrap items-center gap-4">
+          {[
+            { key: "manage", label: "Manage Profile", icon: Settings },
+            { key: "review", label: "Submit Review", icon: Star },
+            { key: "my-reviews", label: "My Reviews", icon: Pencil },
+          ].map((t) => (
+            <button
+              key={t.key}
+              data-testid={`user-tab-${t.key}`}
+              onClick={() => setUserTab(t.key)}
+              className={`inline-flex items-center gap-2 border px-5 py-3 text-xs font-bold uppercase tracking-[0.2em] transition-colors ${
+                userTab === t.key
+                  ? "border-primary bg-primary text-black"
+                  : "border-white/20 text-muted-foreground hover:border-white/40 hover:text-foreground"
+              }`}
+            >
+              <t.icon size={14} />
+              {t.label}
+              {t.key === "my-reviews" && (
+                <span className={userTab === t.key ? "text-black/70" : "text-muted-foreground"}>
+                  {myReviews.length}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {userTab === "manage" && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: EASE }}
-            className="border border-white/15 p-8"
+            className="mt-10 border border-white/15 p-8"
             data-testid="manage-profile-panel"
           >
             <div className="flex items-center gap-3">
@@ -542,12 +570,14 @@ const Profile = () => {
               </div>
             </form>
           </motion.div>
+        )}
 
+        {userTab === "review" && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: EASE }}
-            className="border border-white/15 p-8"
+            className="mt-10 border border-white/15 p-8"
             data-testid="dashboard-review-section"
           >
             <div className="flex items-center gap-3">
@@ -615,16 +645,16 @@ const Profile = () => {
                 )}
               </button>
             </form>
-
           </motion.div>
-        </div>
+        )}
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: EASE }}
-          className="mt-10 border border-white/15 p-8"
-          data-testid="my-reviews-section"
+        {userTab === "my-reviews" && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: EASE }}
+            className="mt-10 border border-white/15 p-8"
+            data-testid="my-reviews-section"
         >
           <div className="flex items-center gap-3">
             <Star size={16} className="text-secondary" />
@@ -749,6 +779,7 @@ const Profile = () => {
                 )}
               </div>
         </motion.div>
+        )}
 
         {isAdmin && (
           <div className="mt-16 flex flex-wrap items-center gap-4">
