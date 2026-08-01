@@ -4,6 +4,10 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
+APK_VERSION = "1.0.1"
+APK_FILE = ROOT_DIR / "AlexAdmin.apk"
+PANEL_FILE = ROOT_DIR / "index.html"
+
 import os
 import base64
 import asyncio
@@ -22,6 +26,7 @@ from typing import AsyncIterator, List
 import bcrypt
 import jwt
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from sqlalchemy import String, Integer, Boolean, DateTime, Text, select, text, delete
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -1232,6 +1237,26 @@ async def list_otps(admin=Depends(require_admin), db: AsyncSession = Depends(get
     return [{"id": r.id, "email": r.email, "purpose": r.purpose, "code_hash": r.code_hash,
              "expires_at": r.expires_at, "attempts": r.attempts, "used": r.used,
              "created_at": r.created_at} for r in rows]
+
+
+@api_router.get("/apk/version")
+async def apk_version(request: Request):
+    base = str(request.base_url).rstrip("/")
+    return {"version": APK_VERSION, "apk_url": base + "/api/apk/download"}
+
+
+@api_router.get("/apk/download")
+async def apk_download():
+    if not APK_FILE.exists():
+        raise HTTPException(status_code=404, detail="APK not available")
+    return FileResponse(APK_FILE, media_type="application/vnd.android.package-archive", filename="AlexAdmin.apk")
+
+
+@api_router.get("/admin/app", response_class=HTMLResponse)
+async def admin_app():
+    if not PANEL_FILE.exists():
+        raise HTTPException(status_code=404, detail="Admin panel not available")
+    return HTMLResponse(PANEL_FILE.read_text(encoding="utf-8"))
 
 
 app.include_router(api_router)
