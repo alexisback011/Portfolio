@@ -41,6 +41,9 @@ services:
       - key: EMAIL_FROM
         value: alexadmin.011@gmail.com
         sync: false
+      - key: EMAIL_SENDER_NAME
+        value: Alex
+        sync: false
       - key: SITE_NAME
         value: Alex Portfolio
       - key: EMAIL_ACCENT

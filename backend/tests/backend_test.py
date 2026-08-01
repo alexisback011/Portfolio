@@ -623,6 +623,7 @@ class TestOtpCustomization:
         assert "expires in" in html
 
     def test_provider_chain(self):
-        from server import _provider_chain, EMAIL_PROVIDER
+        from server import _provider_chain, EMAIL_PROVIDER, EMAIL_SENDER_NAME
         assert "smtp" in _provider_chain()
         assert EMAIL_PROVIDER  # non-empty in any config
+        assert EMAIL_SENDER_NAME  # display name configured

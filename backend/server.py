@@ -236,6 +236,7 @@ EMAIL_FOOTER = os.environ.get(
 EMAIL_PROVIDER = os.environ.get("EMAIL_PROVIDER", "smtp").strip().lower()
 EMAIL_API_KEY = os.environ.get("EMAIL_API_KEY", "")
 EMAIL_FROM = os.environ.get("EMAIL_FROM", SMTP_FROM)
+EMAIL_SENDER_NAME = os.environ.get("EMAIL_SENDER_NAME", "Alex")
 
 OTP_LENGTH = int(os.environ.get("OTP_LENGTH", "6"))
 OTP_TTL_MINUTES = int(os.environ.get("OTP_TTL_MINUTES", "10"))
@@ -352,7 +353,7 @@ def _send_via_sendgrid(to_email: str, subject: str, body: str, html: str = "") -
                      "Content-Type": "application/json"},
             json={
                 "personalizations": [{"to": [{"email": to_email}]}],
-                "from": {"email": EMAIL_FROM},
+                "from": {"email": EMAIL_FROM, "name": EMAIL_SENDER_NAME},
                 "subject": subject,
                 "content": content,
             },
@@ -373,7 +374,7 @@ def _send_via_brevo(to_email: str, subject: str, body: str, html: str = "") -> b
         return False
     import requests
     payload = {
-        "sender": {"email": EMAIL_FROM},
+        "sender": {"email": EMAIL_FROM, "name": EMAIL_SENDER_NAME},
         "to": [{"email": to_email}],
         "subject": subject,
         "textContent": body,
@@ -402,7 +403,7 @@ def _send_via_smtp(to_email: str, subject: str, body: str, html: str = "") -> bo
         return False
     msg = EmailMessage()
     msg["Subject"] = subject
-    msg["From"] = SMTP_FROM
+    msg["From"] = f"{EMAIL_SENDER_NAME} <{SMTP_FROM}>"
     msg["To"] = to_email
     msg.set_content(body)
     if html:
