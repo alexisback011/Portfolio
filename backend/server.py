@@ -223,7 +223,8 @@ SITE_NAME = os.environ.get("SITE_NAME", "Alex Portfolio")
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "").strip()
 SITE_URL = os.environ.get("SITE_URL", "").strip() or (
     f"https://{FRONTEND_URL}" if FRONTEND_URL else "")
-EMAIL_ACCENT = os.environ.get("EMAIL_ACCENT", "#4f46e5")
+EMAIL_ACCENT = os.environ.get("EMAIL_ACCENT", "#ff0059")
+EMAIL_SECONDARY = os.environ.get("EMAIL_SECONDARY", "#00ffff")
 EMAIL_FOOTER = os.environ.get(
     "EMAIL_FOOTER",
     f"&copy; {datetime.now(timezone.utc).year} {SITE_NAME} &mdash; "
@@ -445,32 +446,48 @@ def build_email_html(title: str, message: str, code: str = "") -> str:
     code_html = ""
     if code:
         code_html = (
-            f'<p style="margin:0 0 8px 0;color:#334155;font-size:15px;">'
-            f'Your verification code is:</p>'
-            f'<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;'
-            f'padding:16px;font-size:28px;letter-spacing:8px;text-align:center;'
-            f'font-weight:700;color:#0f172a;margin:0 0 16px 0;">{code}</div>'
-            f'<p style="margin:0 0 16px 0;color:#64748b;font-size:13px;">'
-            f'This code expires in {OTP_TTL_MINUTES} minutes.</p>'
+            f'<p style="margin:0 0 10px 0;color:#9ca3af;font-size:13px;'
+            f'text-transform:uppercase;letter-spacing:2px;">Your verification code</p>'
+            f'<div style="background:#000000;border:1px solid #2a2a2a;'
+            f'border-left:3px solid {EMAIL_ACCENT};border-radius:4px;'
+            f'padding:18px 12px;font-size:30px;letter-spacing:12px;text-align:center;'
+            f'font-weight:700;color:{EMAIL_SECONDARY};font-family:'
+            f"'JetBrains Mono',Menlo,Consolas,monospace;margin:0 0 16px 0;"
+            f'box-shadow:0 0 24px {EMAIL_ACCENT}33;">{code}</div>'
+            f'<p style="margin:0 0 16px 0;color:#6b7280;font-size:12px;'
+            f'font-family:\'JetBrains Mono\',Menlo,Consolas,monospace;">'
+            f'&gt; expires in {OTP_TTL_MINUTES} minutes</p>'
         )
     return (
         f'<!DOCTYPE html><html><body style="margin:0;padding:0;'
-        f'background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;">'
+        f'background:#050505;font-family:'
+        f"'JetBrains Mono',Menlo,Consolas,monospace;"
+        f'-webkit-font-smoothing:antialiased;">'
         f'<table role="presentation" width="100%" cellspacing="0" cellpadding="0" '
-        f'style="background:#f1f5f9;padding:32px 16px;"><tr><td align="center">'
+        f'style="background:#050505;padding:40px 16px;"><tr><td align="center">'
         f'<table role="presentation" width="100%" cellspacing="0" cellpadding="0" '
-        f'style="max-width:480px;background:#ffffff;border-radius:12px;overflow:hidden;'
-        f'border:1px solid #e2e8f0;">'
-        f'<tr><td style="background:{EMAIL_ACCENT};padding:20px 24px;">'
-        f'<div style="color:#ffffff;font-size:20px;font-weight:700;">{SITE_NAME}</div></td></tr>'
-        f'<tr><td style="padding:24px;">'
-        f'<h1 style="margin:0 0 12px 0;color:#0f172a;font-size:22px;">{title}</h1>'
-        f'<p style="margin:0 0 16px 0;color:#334155;font-size:15px;line-height:1.5;">{message}</p>'
+        f'style="max-width:500px;background:#0b0b0b;border:1px solid #1f1f1f;'
+        f'border-radius:8px;overflow:hidden;">'
+        f'<tr><td style="background:#000000;padding:22px 26px;'
+        f'border-bottom:2px solid {EMAIL_ACCENT};">'
+        f'<div style="color:#fafafa;font-size:19px;font-weight:800;'
+        f'font-family:\'Unbounded\',\'Arial Black\',sans-serif;'
+        f'text-transform:uppercase;letter-spacing:1px;">'
+        f'{SITE_NAME}<span style="color:{EMAIL_ACCENT};">.</span></div>'
+        f'<div style="color:#00ffff;font-size:10px;text-transform:uppercase;'
+        f'letter-spacing:4px;margin-top:6px;">secure mailbox &gt;&gt;</div></td></tr>'
+        f'<tr><td style="padding:28px 26px;">'
+        f'<h1 style="margin:0 0 14px 0;color:#fafafa;font-size:20px;'
+        f'font-weight:800;text-transform:uppercase;letter-spacing:1px;'
+        f'font-family:\'Unbounded\',\'Arial Black\',sans-serif;">{title}</h1>'
+        f'<p style="margin:0 0 20px 0;color:#9ca3af;font-size:14px;'
+        f'line-height:1.7;">{message}</p>'
         f'{code_html}'
         f'</td></tr>'
-        f'<tr><td style="padding:16px 24px;border-top:1px solid #e2e8f0;'
-        f'background:#f8fafc;">'
-        f'<div style="color:#64748b;font-size:12px;line-height:1.6;">{EMAIL_FOOTER}</div>'
+        f'<tr><td style="padding:18px 26px;border-top:1px solid #1f1f1f;'
+        f'background:#070707;">'
+        f'<div style="color:#525252;font-size:11px;line-height:1.7;'
+        f'font-family:\'JetBrains Mono\',Menlo,Consolas,monospace;">{EMAIL_FOOTER}</div>'
         f'</td></tr></table></td></tr></table></body></html>'
     )
 

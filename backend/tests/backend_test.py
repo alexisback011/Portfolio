@@ -618,7 +618,8 @@ class TestOtpCustomization:
         html = build_email_html("Verify your email", "hello", "123456")
         assert "Alex Portfolio" in html
         assert "123456" in html
-        assert "#4f46e5" in html
+        assert "#ff0059" in html
+        assert "#00ffff" in html
         assert "expires in" in html
 
     def test_provider_chain(self):

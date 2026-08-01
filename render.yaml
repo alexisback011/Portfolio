@@ -43,7 +43,9 @@ services:
       - key: SITE_NAME
         value: Alex Portfolio
       - key: EMAIL_ACCENT
-        value: "#4f46e5"
+        value: "#ff0059"
+      - key: EMAIL_SECONDARY
+        value: "#00ffff"
       - key: SITE_URL
         sync: false
       - key: OTP_LENGTH
