@@ -81,6 +81,7 @@ const Profile = () => {
   const [editForm, setEditForm] = useState({ rating: 5, comment: "" });
   const [savingEdit, setSavingEdit] = useState(false);
   const isAdmin = user?.role === "admin";
+  const isReviewHiddenUser = user?.email?.toLowerCase() === "susnata.011@gmail.com";
 
   useEffect(() => {
     if (!loading && !user) navigate("/login");
@@ -508,7 +509,11 @@ const Profile = () => {
               desc: "Edit or delete reviews you have posted",
               icon: Pencil,
             },
-          ].map((t) => {
+          ]
+            .filter(
+              (t) => !(isReviewHiddenUser && (t.key === "review" || t.key === "my-reviews"))
+            )
+            .map((t) => {
             const open = userTab === t.key;
             return (
               <button
@@ -653,7 +658,7 @@ const Profile = () => {
           </motion.div>
         )}
 
-        {userTab === "review" && (
+        {userTab === "review" && !isReviewHiddenUser && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -729,7 +734,7 @@ const Profile = () => {
           </motion.div>
         )}
 
-        {userTab === "my-reviews" && (
+        {userTab === "my-reviews" && !isReviewHiddenUser && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
