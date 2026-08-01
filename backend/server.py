@@ -23,7 +23,7 @@ import bcrypt
 import jwt
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
-from sqlalchemy import String, Integer, Boolean, DateTime, select, text, delete
+from sqlalchemy import String, Integer, Boolean, DateTime, Text, select, text, delete
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from starlette.middleware.cors import CORSMiddleware
@@ -64,7 +64,7 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="user")
     is_banned: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    profile_image: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    profile_image: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
     )
@@ -86,7 +86,7 @@ class Review(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     name: Mapped[str] = mapped_column(String(80), nullable=False)
-    profile_image: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    profile_image: Mapped[str | None] = mapped_column(Text, nullable=True)
     rating: Mapped[int] = mapped_column(Integer, nullable=False)
     comment: Mapped[str] = mapped_column(String(1000), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
@@ -564,6 +564,15 @@ async def init_db():
             await conn.execute(text("ALTER TABLE users ADD COLUMN profile_image VARCHAR(2000)"))
     except Exception:
         pass
+    for stmt in (
+        "ALTER TABLE users ALTER COLUMN profile_image TYPE TEXT",
+        "ALTER TABLE reviews ALTER COLUMN profile_image TYPE TEXT",
+    ):
+        try:
+            async with engine.begin() as conn:
+                await conn.execute(text(stmt))
+        except Exception:
+            pass
     try:
         async with engine.begin() as conn:
             await conn.execute(text("ALTER TABLE users ADD COLUMN is_banned BOOLEAN DEFAULT 0"))
@@ -649,7 +658,7 @@ class UpdateProfileInput(BaseModel):
     email: EmailStr | None = None
     password: str | None = Field(default=None, min_length=6, max_length=128)
     current_password: str | None = Field(default=None, max_length=128)
-    profile_image: str | None = Field(default=None, max_length=2000)
+    profile_image: str | None = Field(default=None, max_length=400000)
 
 
 class RequestSignupOtpInput(BaseModel):
