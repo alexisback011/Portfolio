@@ -323,6 +323,7 @@ def hash_otp(code: str) -> str:
 
 def _send_via_sendgrid(to_email: str, subject: str, body: str) -> bool:
     if not EMAIL_API_KEY:
+        logger.warning("SendGrid email skipped: EMAIL_API_KEY not set")
         return False
     import requests
     try:
@@ -338,7 +339,10 @@ def _send_via_sendgrid(to_email: str, subject: str, body: str) -> bool:
             },
             timeout=15,
         )
-        return r.status_code in (200, 201, 202)
+        if r.status_code in (200, 201, 202):
+            return True
+        logger.warning("SendGrid rejected email (%s): %s", r.status_code, r.text[:500])
+        return False
     except Exception as e:
         logger.warning("SendGrid email failed: %s", e)
         return False
@@ -346,6 +350,7 @@ def _send_via_sendgrid(to_email: str, subject: str, body: str) -> bool:
 
 def _send_via_brevo(to_email: str, subject: str, body: str) -> bool:
     if not EMAIL_API_KEY:
+        logger.warning("Brevo email skipped: EMAIL_API_KEY not set")
         return False
     import requests
     try:
@@ -361,7 +366,10 @@ def _send_via_brevo(to_email: str, subject: str, body: str) -> bool:
             },
             timeout=15,
         )
-        return r.status_code in (200, 201, 202)
+        if r.status_code in (200, 201, 202):
+            return True
+        logger.warning("Brevo rejected email (%s): %s", r.status_code, r.text[:500])
+        return False
     except Exception as e:
         logger.warning("Brevo email failed: %s", e)
         return False
