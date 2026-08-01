@@ -70,6 +70,8 @@ const Profile = () => {
     newPassword: "",
   });
   const [savingProfile, setSavingProfile] = useState(false);
+  const [review, setReview] = useState({ rating: 5, comment: "" });
+  const [submittingReview, setSubmittingReview] = useState(false);
   const isAdmin = user?.role === "admin";
 
   useEffect(() => {
@@ -221,6 +223,28 @@ const Profile = () => {
     await logout();
     toast.success("Signed out.");
     navigate("/");
+  };
+
+  const onSubmitReview = async (e) => {
+    e.preventDefault();
+    if (!review.comment.trim()) {
+      toast.error("Please add a comment.");
+      return;
+    }
+    setSubmittingReview(true);
+    try {
+      await axios.post(
+        `${API}/review`,
+        { rating: review.rating, comment: review.comment },
+        { withCredentials: true }
+      );
+      setReview({ rating: 5, comment: "" });
+      toast.success("Review posted. Thanks for the feedback!");
+    } catch {
+      toast.error("Could not post review.");
+    } finally {
+      setSubmittingReview(false);
+    }
   };
 
   const onDelete = async (id) => {
@@ -474,6 +498,76 @@ const Profile = () => {
                 </button>
               </div>
             </form>
+
+            <div className="mt-12 border-t border-white/10 pt-8">
+              <div className="flex items-center gap-3">
+                <Star size={16} className="text-primary" />
+                <span className="text-xs font-bold uppercase tracking-[0.3em]">
+                  Submit Review
+                </span>
+                <span className="h-px flex-1 bg-white/15" />
+              </div>
+
+              <form
+                onSubmit={onSubmitReview}
+                data-testid="dashboard-review-form"
+                className="mt-6 flex flex-col gap-5"
+              >
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                    Rating
+                  </span>
+                  <div className="mt-3 flex items-center gap-2" data-testid="dashboard-review-rating">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        aria-label={`${n} star${n > 1 ? "s" : ""}`}
+                        onClick={() => setReview((f) => ({ ...f, rating: n }))}
+                        className="transition-transform hover:scale-125"
+                      >
+                        <Star
+                          size={26}
+                          strokeWidth={n <= review.rating ? 2 : 1}
+                          className={
+                            n <= review.rating
+                              ? "fill-primary text-primary"
+                              : "fill-transparent text-white/25"
+                          }
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <label className="block">
+                  <span className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                    Comment
+                  </span>
+                  <textarea
+                    value={review.comment}
+                    onChange={(e) => setReview((f) => ({ ...f, comment: e.target.value }))}
+                    rows={3}
+                    placeholder="What did you think?"
+                    data-testid="dashboard-review-comment"
+                    className="mt-3 w-full bg-transparent border-b-2 border-white/20 focus:border-primary outline-none py-3 text-base font-light resize-none transition-colors duration-200"
+                  />
+                </label>
+
+                <button
+                  type="submit"
+                  disabled={submittingReview}
+                  data-testid="dashboard-review-submit"
+                  className="inline-flex items-center justify-center gap-3 bg-primary text-black px-6 py-4 text-xs font-bold uppercase tracking-[0.25em] hover:bg-secondary disabled:opacity-60 transition-colors duration-200"
+                >
+                  {submittingReview ? (
+                    <span className="h-4 w-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                  ) : (
+                    "Post Review"
+                  )}
+                </button>
+              </form>
+            </div>
           </motion.div>
         )}
 
