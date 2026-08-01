@@ -39,6 +39,7 @@ services:
       - key: EMAIL_API_KEY
         sync: false
       - key: EMAIL_FROM
+        value: alexadmin.011@gmail.com
         sync: false
       - key: SITE_NAME
         value: Alex Portfolio
