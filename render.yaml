@@ -35,13 +35,27 @@ services:
       - key: SMTP_FROM
         sync: false
       - key: EMAIL_PROVIDER
-        value: sendgrid
+        value: brevo,sendgrid
       - key: EMAIL_API_KEY
         sync: false
       - key: EMAIL_FROM
         sync: false
       - key: SITE_NAME
         value: Alex Portfolio
+      - key: EMAIL_ACCENT
+        value: "#4f46e5"
+      - key: SITE_URL
+        sync: false
+      - key: OTP_LENGTH
+        value: "6"
+      - key: OTP_TTL_MINUTES
+        value: "10"
+      - key: OTP_MAX_ATTEMPTS
+        value: "5"
+      - key: OTP_RESEND_COOLDOWN_SECONDS
+        value: "60"
+      - key: OTP_LOG_CODES
+        value: "0"
       - key: APP_ENV
         value: production
 

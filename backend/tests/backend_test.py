@@ -575,3 +575,53 @@ class TestNsfwDecisionLogic:
         assert not _image_is_nsfw([{"class": "FACE_FEMALE", "score": 0.99}])
         assert not _image_is_nsfw([{"class": "FEET_EXPOSED", "score": 0.99}])
         assert not _image_is_nsfw([{"class": "FEMALE_BREAST_EXPOSED", "score": 0.2}])
+
+
+# ---------- OTP customization tests ----------
+class TestOtpCustomization:
+    def test_signup_otp_resend_cooldown(self):
+        email = f"cooldown_{uuid.uuid4().hex[:8]}@test.dev"
+        r = requests.post(f"{BASE_URL}/api/auth/request-signup-otp",
+                          json={"name": "COOLDOWN USER", "email": email, "password": "pass1234"})
+        assert r.status_code == 200, r.text
+        r = requests.post(f"{BASE_URL}/api/auth/request-signup-otp",
+                          json={"name": "COOLDOWN USER", "email": email, "password": "pass1234"})
+        assert r.status_code == 429, r.text
+        assert "wait" in r.json()["detail"].lower()
+
+    def test_reset_otp_resend_cooldown(self):
+        email = f"reset_cd_{uuid.uuid4().hex[:8]}@test.dev"
+        r = requests.post(f"{BASE_URL}/api/auth/register",
+                          json={"name": "CD USER", "email": email, "password": "pass1234"})
+        assert r.status_code == 200
+        r = requests.post(f"{BASE_URL}/api/auth/request-reset-otp", json={"email": email})
+        assert r.status_code == 200, r.text
+        r = requests.post(f"{BASE_URL}/api/auth/request-reset-otp", json={"email": email})
+        assert r.status_code == 429, r.text
+
+    def test_signup_otp_after_cooldown_waits(self):
+        # cooldown only blocks resend, not first request from a fresh email
+        email = f"fresh_{uuid.uuid4().hex[:8]}@test.dev"
+        r = requests.post(f"{BASE_URL}/api/auth/request-signup-otp",
+                          json={"name": "FRESH USER", "email": email, "password": "pass1234"})
+        assert r.status_code == 200, r.text
+        assert "dev_otp" in r.json()
+
+    def test_generate_otp_respects_length(self):
+        from server import generate_otp, OTP_LENGTH
+        code = generate_otp()
+        assert len(code) == OTP_LENGTH
+        assert code.isdigit()
+
+    def test_email_html_branded(self):
+        from server import build_email_html
+        html = build_email_html("Verify your email", "hello", "123456")
+        assert "Alex Portfolio" in html
+        assert "123456" in html
+        assert "#4f46e5" in html
+        assert "expires in" in html
+
+    def test_provider_chain(self):
+        from server import _provider_chain, EMAIL_PROVIDER
+        assert "smtp" in _provider_chain()
+        assert EMAIL_PROVIDER  # non-empty in any config

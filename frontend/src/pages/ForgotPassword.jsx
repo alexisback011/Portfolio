@@ -7,6 +7,7 @@ import { useAuth, formatApiErrorDetail } from "../context/AuthContext";
 import { PROFILE } from "../data";
 
 const EASE = [0.85, 0, 0.15, 1];
+const RESEND_COOLDOWN = 60;
 
 const ForgotPassword = () => {
   const { user, requestResetOtp, resetPassword } = useAuth();
@@ -18,6 +19,13 @@ const ForgotPassword = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
 
   useEffect(() => {
     if (user && user.id) navigate("/profile");
@@ -32,12 +40,28 @@ const ForgotPassword = () => {
       if (data.dev_otp) toast.info(`Dev code: ${data.dev_otp}`);
       toast.success("Reset code sent to your email.");
       setStep("reset");
+      setResendCooldown(RESEND_COOLDOWN);
     } catch (err) {
       const msg = formatApiErrorDetail(err.response?.data?.detail) || err.message;
       setError(msg);
       toast.error(msg);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const onResend = async () => {
+    setError("");
+    try {
+      const data = await requestResetOtp(email.trim());
+      if (data.dev_otp) toast.info(`Dev code: ${data.dev_otp}`);
+      toast.success("New code sent.");
+      setResendCooldown(RESEND_COOLDOWN);
+    } catch (err) {
+      const detail = formatApiErrorDetail(err.response?.data?.detail);
+      const m = detail ? String(detail).match(/wait (\d+)s/) : null;
+      if (m) setResendCooldown(parseInt(m[1], 10));
+      toast.error(detail || "Could not resend code.");
     }
   };
 
@@ -204,16 +228,26 @@ const ForgotPassword = () => {
                 {loading ? <Loader2 size={16} className="animate-spin" /> : "Reset Password"}
               </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setStep("request");
-                  setError("");
-                }}
-                className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Change email
-              </button>
+              <div className="flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={onResend}
+                  disabled={resendCooldown > 0 || loading}
+                  className="text-xs font-bold uppercase tracking-[0.2em] text-secondary hover:text-primary transition-colors disabled:opacity-50 disabled:hover:text-secondary"
+                >
+                  {resendCooldown > 0 ? `Resend code (${resendCooldown}s)` : "Resend code"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep("request");
+                    setError("");
+                  }}
+                  className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Change email
+                </button>
+              </div>
             </form>
           )}
         </motion.div>

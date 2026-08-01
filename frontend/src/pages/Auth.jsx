@@ -7,6 +7,7 @@ import { useAuth, formatApiErrorDetail } from "../context/AuthContext";
 import { PROFILE } from "../data";
 
 const EASE = [0.85, 0, 0.15, 1];
+const RESEND_COOLDOWN = 60;
 
 const Auth = () => {
   const { user, login, requestSignupOtp, verifySignupOtp } = useAuth();
@@ -18,6 +19,13 @@ const Auth = () => {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
 
   useEffect(() => {
     if (user && user.id) navigate("/profile");
@@ -29,6 +37,7 @@ const Auth = () => {
     setForm((f) => ({ ...f, password: "" }));
     setStep("form");
     setOtp("");
+    setResendCooldown(0);
   }, [location.pathname]);
 
   const onChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -68,6 +77,7 @@ const Auth = () => {
       toast.success("Verification code sent to your email.");
       setStep("otp");
       setOtp("");
+      setResendCooldown(RESEND_COOLDOWN);
     } catch (err) {
       const msg = formatApiErrorDetail(err.response?.data?.detail) || err.message;
       setError(msg);
@@ -103,8 +113,12 @@ const Auth = () => {
       const data = await requestSignupOtp(form.name.trim(), form.email.trim(), form.password);
       if (data.dev_otp) toast.info(`Dev code: ${data.dev_otp}`);
       toast.success("New code sent.");
+      setResendCooldown(RESEND_COOLDOWN);
     } catch (err) {
-      toast.error(formatApiErrorDetail(err.response?.data?.detail) || "Could not resend code.");
+      const detail = formatApiErrorDetail(err.response?.data?.detail);
+      const m = detail ? String(detail).match(/wait (\d+)s/) : null;
+      if (m) setResendCooldown(parseInt(m[1], 10));
+      toast.error(detail || "Could not resend code.");
     }
   };
 
@@ -200,10 +214,11 @@ const Auth = () => {
                 <button
                   type="button"
                   onClick={onResendOtp}
+                  disabled={resendCooldown > 0 || loading}
                   data-testid="otp-resend"
-                  className="text-secondary hover:text-primary transition-colors"
+                  className="text-secondary hover:text-primary transition-colors disabled:opacity-50 disabled:hover:text-secondary"
                 >
-                  Resend code
+                  {resendCooldown > 0 ? `Resend code (${resendCooldown}s)` : "Resend code"}
                 </button>
                 <button
                   type="button"

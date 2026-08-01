@@ -220,15 +220,30 @@ SMTP_USER = os.environ.get("SMTP_USER", "")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
 SMTP_FROM = os.environ.get("SMTP_FROM", SMTP_USER or "no-reply@portfolio.app")
 SITE_NAME = os.environ.get("SITE_NAME", "Alex Portfolio")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "").strip()
+SITE_URL = os.environ.get("SITE_URL", "").strip() or (
+    f"https://{FRONTEND_URL}" if FRONTEND_URL else "")
+EMAIL_ACCENT = os.environ.get("EMAIL_ACCENT", "#4f46e5")
+EMAIL_FOOTER = os.environ.get(
+    "EMAIL_FOOTER",
+    f"&copy; {datetime.now(timezone.utc).year} {SITE_NAME} &mdash; "
+    f"If you didn't request this, you can safely ignore this email.")
 
 # Transactional email API (Render free tier blocks outbound SMTP).
-# EMAIL_PROVIDER: "smtp" (default) | "sendgrid" | "brevo"
+# EMAIL_PROVIDER: comma-separated, tried in order.
+# Options: "smtp" | "sendgrid" | "brevo"  (e.g. "brevo,sendgrid")
 EMAIL_PROVIDER = os.environ.get("EMAIL_PROVIDER", "smtp").strip().lower()
 EMAIL_API_KEY = os.environ.get("EMAIL_API_KEY", "")
 EMAIL_FROM = os.environ.get("EMAIL_FROM", SMTP_FROM)
 
-OTP_TTL_MINUTES = 10
-OTP_MAX_ATTEMPTS = 5
+OTP_LENGTH = int(os.environ.get("OTP_LENGTH", "6"))
+OTP_TTL_MINUTES = int(os.environ.get("OTP_TTL_MINUTES", "10"))
+OTP_MAX_ATTEMPTS = int(os.environ.get("OTP_MAX_ATTEMPTS", "5"))
+OTP_RESEND_COOLDOWN_SECONDS = int(os.environ.get("OTP_RESEND_COOLDOWN_SECONDS", "60"))
+# When enabled, the generated code is logged so admins can test without
+# checking email. Enabled by default in dev, off in production (opt-in).
+OTP_LOG_CODES = os.environ.get("OTP_LOG_CODES", "1" if IS_DEV else "0").strip().lower() in (
+    "1", "true", "yes")
 
 
 def is_admin_email(email: str) -> bool:
@@ -314,18 +329,21 @@ async def moderate_image(data_url: str) -> bool:
 
 
 def generate_otp() -> str:
-    return f"{secrets.randbelow(1000000):06d}"
+    return f"{secrets.randbelow(10 ** OTP_LENGTH):0{OTP_LENGTH}d}"
 
 
 def hash_otp(code: str) -> str:
     return hashlib.sha256(code.encode("utf-8")).hexdigest()
 
 
-def _send_via_sendgrid(to_email: str, subject: str, body: str) -> bool:
+def _send_via_sendgrid(to_email: str, subject: str, body: str, html: str = "") -> bool:
     if not EMAIL_API_KEY:
         logger.warning("SendGrid email skipped: EMAIL_API_KEY not set")
         return False
     import requests
+    content = [{"type": "text/plain", "value": body}]
+    if html:
+        content.append({"type": "text/html", "value": html})
     try:
         r = requests.post(
             "https://api.sendgrid.com/v3/mail/send",
@@ -335,7 +353,7 @@ def _send_via_sendgrid(to_email: str, subject: str, body: str) -> bool:
                 "personalizations": [{"to": [{"email": to_email}]}],
                 "from": {"email": EMAIL_FROM},
                 "subject": subject,
-                "content": [{"type": "text/plain", "value": body}],
+                "content": content,
             },
             timeout=15,
         )
@@ -348,22 +366,25 @@ def _send_via_sendgrid(to_email: str, subject: str, body: str) -> bool:
         return False
 
 
-def _send_via_brevo(to_email: str, subject: str, body: str) -> bool:
+def _send_via_brevo(to_email: str, subject: str, body: str, html: str = "") -> bool:
     if not EMAIL_API_KEY:
         logger.warning("Brevo email skipped: EMAIL_API_KEY not set")
         return False
     import requests
+    payload = {
+        "sender": {"email": EMAIL_FROM},
+        "to": [{"email": to_email}],
+        "subject": subject,
+        "textContent": body,
+    }
+    if html:
+        payload["htmlContent"] = html
     try:
         r = requests.post(
             "https://api.brevo.com/v3/smtp/email",
             headers={"api-key": EMAIL_API_KEY,
                      "Content-Type": "application/json"},
-            json={
-                "sender": {"email": EMAIL_FROM},
-                "to": [{"email": to_email}],
-                "subject": subject,
-                "textContent": body,
-            },
+            json=payload,
             timeout=15,
         )
         if r.status_code in (200, 201, 202):
@@ -375,11 +396,7 @@ def _send_via_brevo(to_email: str, subject: str, body: str) -> bool:
         return False
 
 
-def send_email(to_email: str, subject: str, body: str) -> bool:
-    if EMAIL_PROVIDER == "sendgrid":
-        return _send_via_sendgrid(to_email, subject, body)
-    if EMAIL_PROVIDER == "brevo":
-        return _send_via_brevo(to_email, subject, body)
+def _send_via_smtp(to_email: str, subject: str, body: str, html: str = "") -> bool:
     if not (SMTP_HOST and SMTP_USER):
         return False
     msg = EmailMessage()
@@ -387,6 +404,8 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
     msg["From"] = SMTP_FROM
     msg["To"] = to_email
     msg.set_content(body)
+    if html:
+        msg.add_alternative(html, subtype="html")
     try:
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
             server.starttls()
@@ -396,6 +415,64 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
     except Exception as e:
         logger.warning("Failed to send email: %s", e)
         return False
+
+
+def _provider_chain() -> list:
+    providers = [p.strip().lower() for p in EMAIL_PROVIDER.split(",") if p.strip()]
+    if "smtp" not in providers and "sendgrid" not in providers and "brevo" not in providers:
+        providers = ["smtp"]
+    return providers
+
+
+def send_email(to_email: str, subject: str, body: str, html: str = "") -> bool:
+    senders = {
+        "sendgrid": _send_via_sendgrid,
+        "brevo": _send_via_brevo,
+        "smtp": _send_via_smtp,
+    }
+    providers = _provider_chain()
+    for provider in providers:
+        try:
+            if senders[provider](to_email, subject, body, html):
+                return True
+        except Exception as e:  # defensive: one sender must never break the chain
+            logger.warning("Email provider %s raised: %s", provider, e)
+    logger.warning("All email providers failed for %s", to_email)
+    return False
+
+
+def build_email_html(title: str, message: str, code: str = "") -> str:
+    code_html = ""
+    if code:
+        code_html = (
+            f'<p style="margin:0 0 8px 0;color:#334155;font-size:15px;">'
+            f'Your verification code is:</p>'
+            f'<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;'
+            f'padding:16px;font-size:28px;letter-spacing:8px;text-align:center;'
+            f'font-weight:700;color:#0f172a;margin:0 0 16px 0;">{code}</div>'
+            f'<p style="margin:0 0 16px 0;color:#64748b;font-size:13px;">'
+            f'This code expires in {OTP_TTL_MINUTES} minutes.</p>'
+        )
+    return (
+        f'<!DOCTYPE html><html><body style="margin:0;padding:0;'
+        f'background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;">'
+        f'<table role="presentation" width="100%" cellspacing="0" cellpadding="0" '
+        f'style="background:#f1f5f9;padding:32px 16px;"><tr><td align="center">'
+        f'<table role="presentation" width="100%" cellspacing="0" cellpadding="0" '
+        f'style="max-width:480px;background:#ffffff;border-radius:12px;overflow:hidden;'
+        f'border:1px solid #e2e8f0;">'
+        f'<tr><td style="background:{EMAIL_ACCENT};padding:20px 24px;">'
+        f'<div style="color:#ffffff;font-size:20px;font-weight:700;">{SITE_NAME}</div></td></tr>'
+        f'<tr><td style="padding:24px;">'
+        f'<h1 style="margin:0 0 12px 0;color:#0f172a;font-size:22px;">{title}</h1>'
+        f'<p style="margin:0 0 16px 0;color:#334155;font-size:15px;line-height:1.5;">{message}</p>'
+        f'{code_html}'
+        f'</td></tr>'
+        f'<tr><td style="padding:16px 24px;border-top:1px solid #e2e8f0;'
+        f'background:#f8fafc;">'
+        f'<div style="color:#64748b;font-size:12px;line-height:1.6;">{EMAIL_FOOTER}</div>'
+        f'</td></tr></table></td></tr></table></body></html>'
+    )
 
 
 async def issue_otp(db: AsyncSession, email: str, purpose: str) -> str:
@@ -409,7 +486,21 @@ async def issue_otp(db: AsyncSession, email: str, purpose: str) -> str:
         expires_at=datetime.now(timezone.utc) + timedelta(minutes=OTP_TTL_MINUTES),
     ))
     await db.commit()
+    if OTP_LOG_CODES:
+        logger.info("OTP %s issued for %s (purpose=%s)", code, email, purpose)
     return code
+
+
+async def _otp_cooldown_remaining(db: AsyncSession, email: str, purpose: str) -> int:
+    rec = await db.scalar(select(OtpRecord)
+                          .where(OtpRecord.email == email,
+                                 OtpRecord.purpose == purpose)
+                          .order_by(OtpRecord.created_at.desc()))
+    if not rec:
+        return 0
+    last_sent = _utc_naive(rec.created_at)
+    elapsed = (datetime.now(timezone.utc).replace(tzinfo=None) - last_sent).total_seconds()
+    return max(0, OTP_RESEND_COOLDOWN_SECONDS - int(elapsed))
 
 
 def _utc_naive(dt: datetime) -> datetime:
@@ -703,11 +794,20 @@ async def request_signup_otp(input: RequestSignupOtpInput, db: AsyncSession = De
     if is_admin_email(email):
         return {"message": "Admin accounts don't require email verification",
                 "email": email, "skip_otp": True}
+    remaining = await _otp_cooldown_remaining(db, email, "signup")
+    if remaining > 0:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Please wait {remaining}s before requesting another code")
     code = await issue_otp(db, email, "signup")
     subject = f"Verify your email — {SITE_NAME}"
-    body = (f"Your verification code for {SITE_NAME} is:\n\n{code}\n\n"
+    body = (f"Your verification code for {SITE_NAME} is: {code}\n"
             f"It expires in {OTP_TTL_MINUTES} minutes.")
-    sent = send_email(email, subject, body)
+    html = build_email_html(
+        "Verify your email",
+        f"Use the code below to finish creating your account on {SITE_NAME}.",
+        code)
+    sent = send_email(email, subject, body, html)
     if not sent and not IS_DEV:
         raise HTTPException(status_code=500, detail="Could not send verification email")
     resp = {"message": "Verification code sent", "email": email}
@@ -746,11 +846,20 @@ async def request_reset_otp(input: RequestResetOtpInput, db: AsyncSession = Depe
     user = await db.scalar(select(User).where(User.email == email))
     if not user:
         raise HTTPException(status_code=404, detail="No account found with that email")
+    remaining = await _otp_cooldown_remaining(db, email, "reset")
+    if remaining > 0:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Please wait {remaining}s before requesting another code")
     code = await issue_otp(db, email, "reset")
     subject = f"Reset your password — {SITE_NAME}"
-    body = (f"Your password reset code for {SITE_NAME} is:\n\n{code}\n\n"
+    body = (f"Your password reset code for {SITE_NAME} is: {code}\n"
             f"It expires in {OTP_TTL_MINUTES} minutes.")
-    sent = send_email(email, subject, body)
+    html = build_email_html(
+        "Reset your password",
+        f"Use the code below to reset your password for {SITE_NAME}.",
+        code)
+    sent = send_email(email, subject, body, html)
     if not sent and not IS_DEV:
         raise HTTPException(status_code=500, detail="Could not send reset email")
     resp = {"message": "Reset code sent", "email": email}
