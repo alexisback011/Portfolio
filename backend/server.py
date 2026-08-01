@@ -221,6 +221,12 @@ SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
 SMTP_FROM = os.environ.get("SMTP_FROM", SMTP_USER or "no-reply@portfolio.app")
 SITE_NAME = os.environ.get("SITE_NAME", "Alex Portfolio")
 
+# Transactional email API (Render free tier blocks outbound SMTP).
+# EMAIL_PROVIDER: "smtp" (default) | "sendgrid" | "brevo"
+EMAIL_PROVIDER = os.environ.get("EMAIL_PROVIDER", "smtp").strip().lower()
+EMAIL_API_KEY = os.environ.get("EMAIL_API_KEY", "")
+EMAIL_FROM = os.environ.get("EMAIL_FROM", SMTP_FROM)
+
 OTP_TTL_MINUTES = 10
 OTP_MAX_ATTEMPTS = 5
 
@@ -315,7 +321,57 @@ def hash_otp(code: str) -> str:
     return hashlib.sha256(code.encode("utf-8")).hexdigest()
 
 
+def _send_via_sendgrid(to_email: str, subject: str, body: str) -> bool:
+    if not EMAIL_API_KEY:
+        return False
+    import requests
+    try:
+        r = requests.post(
+            "https://api.sendgrid.com/v3/mail/send",
+            headers={"Authorization": f"Bearer {EMAIL_API_KEY}",
+                     "Content-Type": "application/json"},
+            json={
+                "personalizations": [{"to": [{"email": to_email}]}],
+                "from": {"email": EMAIL_FROM},
+                "subject": subject,
+                "content": [{"type": "text/plain", "value": body}],
+            },
+            timeout=15,
+        )
+        return r.status_code in (200, 201, 202)
+    except Exception as e:
+        logger.warning("SendGrid email failed: %s", e)
+        return False
+
+
+def _send_via_brevo(to_email: str, subject: str, body: str) -> bool:
+    if not EMAIL_API_KEY:
+        return False
+    import requests
+    try:
+        r = requests.post(
+            "https://api.brevo.com/v3/smtp/email",
+            headers={"api-key": EMAIL_API_KEY,
+                     "Content-Type": "application/json"},
+            json={
+                "sender": {"email": EMAIL_FROM},
+                "to": [{"email": to_email}],
+                "subject": subject,
+                "textContent": body,
+            },
+            timeout=15,
+        )
+        return r.status_code in (200, 201, 202)
+    except Exception as e:
+        logger.warning("Brevo email failed: %s", e)
+        return False
+
+
 def send_email(to_email: str, subject: str, body: str) -> bool:
+    if EMAIL_PROVIDER == "sendgrid":
+        return _send_via_sendgrid(to_email, subject, body)
+    if EMAIL_PROVIDER == "brevo":
+        return _send_via_brevo(to_email, subject, body)
     if not (SMTP_HOST and SMTP_USER):
         return False
     msg = EmailMessage()

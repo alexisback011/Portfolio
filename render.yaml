@@ -34,6 +34,12 @@ services:
         sync: false
       - key: SMTP_FROM
         sync: false
+      - key: EMAIL_PROVIDER
+        value: sendgrid
+      - key: EMAIL_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
       - key: SITE_NAME
         value: Alex Portfolio
       - key: APP_ENV
