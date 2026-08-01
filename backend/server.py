@@ -5,7 +5,10 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 import os
+import base64
+import asyncio
 import logging
+import threading
 import uuid
 import hmac
 import hashlib
@@ -225,6 +228,83 @@ OTP_MAX_ATTEMPTS = 5
 def is_admin_email(email: str) -> bool:
     configured = os.environ.get("ADMIN_EMAIL", "").strip().lower()
     return bool(configured) and email.lower() == configured
+
+
+# ---- NSFW content moderation ----
+NSFW_IMAGE_ENFORCE = os.environ.get("NSFW_IMAGE_ENFORCE", "1").strip().lower() not in (
+    "0", "false", "no")
+NSFW_IMAGE_THRESHOLD = float(os.environ.get("NSFW_IMAGE_THRESHOLD", "0.5"))
+
+_profanity_instance = None
+_profanity_lock = threading.Lock()
+
+
+def _get_profanity():
+    global _profanity_instance
+    if _profanity_instance is None:
+        with _profanity_lock:
+            if _profanity_instance is None:
+                from better_profanity import profanity
+                _profanity_instance = profanity
+    return _profanity_instance
+
+
+def name_contains_profanity(name: str) -> bool:
+    return _get_profanity().contains_profanity(name)
+
+
+def check_name_clean(name: str) -> None:
+    if name_contains_profanity(name):
+        raise HTTPException(status_code=400, detail="Name contains inappropriate language")
+
+
+_nude_detector_instance = None
+_nude_detector_lock = threading.Lock()
+
+NSFW_EXPOSED_CLASSES = {
+    "BUTTOCKS_EXPOSED",
+    "FEMALE_BREAST_EXPOSED",
+    "FEMALE_GENITALIA_EXPOSED",
+    "MALE_BREAST_EXPOSED",
+    "ANUS_EXPOSED",
+    "MALE_GENITALIA_EXPOSED",
+}
+
+
+def _get_nude_detector():
+    global _nude_detector_instance
+    if _nude_detector_instance is None:
+        with _nude_detector_lock:
+            if _nude_detector_instance is None:
+                from nudenet import NudeDetector
+                _nude_detector_instance = NudeDetector()
+    return _nude_detector_instance
+
+
+def _image_is_nsfw(detections: list) -> bool:
+    return any(
+        d.get("class") in NSFW_EXPOSED_CLASSES
+        and float(d.get("score", 0)) >= NSFW_IMAGE_THRESHOLD
+        for d in detections
+    )
+
+
+def _detect_image_nsfw_sync(image_bytes: bytes) -> bool:
+    detector = _get_nude_detector()
+    with _nude_detector_lock:
+        detections = detector.detect(image_bytes)
+    return _image_is_nsfw(detections)
+
+
+def _decode_data_url(data_url: str) -> bytes:
+    if "," not in data_url:
+        raise ValueError("invalid data URL")
+    return base64.b64decode(data_url.split(",", 1)[1])
+
+
+async def moderate_image(data_url: str) -> bool:
+    raw = _decode_data_url(data_url)
+    return await asyncio.to_thread(_detect_image_nsfw_sync, raw)
 
 
 def generate_otp() -> str:
@@ -531,6 +611,7 @@ async def index():
 async def register(input: RegisterInput, request: Request, response: Response,
                    db: AsyncSession = Depends(get_db)):
     email = input.email.lower()
+    check_name_clean(input.name)
     try:
         user = User(name=input.name, email=email,
                     password_hash=hash_password(input.password), role="user")
@@ -551,6 +632,7 @@ async def register(input: RegisterInput, request: Request, response: Response,
 @api_router.post("/auth/request-signup-otp")
 async def request_signup_otp(input: RequestSignupOtpInput, db: AsyncSession = Depends(get_db)):
     email = input.email.lower()
+    check_name_clean(input.name)
     existing = await db.scalar(select(User).where(User.email == email))
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -575,6 +657,7 @@ async def request_signup_otp(input: RequestSignupOtpInput, db: AsyncSession = De
 async def verify_signup_otp(input: VerifySignupInput, request: Request, response: Response,
                             db: AsyncSession = Depends(get_db)):
     email = input.email.lower()
+    check_name_clean(input.name)
     if not is_admin_email(email) and not await verify_otp(db, email, "signup", input.otp):
         raise HTTPException(status_code=400, detail="Invalid or expired verification code")
     existing = await db.scalar(select(User).where(User.email == email))
@@ -667,6 +750,7 @@ async def update_me(input: UpdateProfileInput, current=Depends(get_current_user)
     if input.name is not None:
         new_name = input.name.strip()
         if new_name:
+            check_name_clean(new_name)
             user.name = new_name
     if input.email is not None:
         new_email = input.email.lower()
@@ -680,6 +764,17 @@ async def update_me(input: UpdateProfileInput, current=Depends(get_current_user)
         pi = input.profile_image.strip()
         if pi and not (pi.startswith("data:image/") or pi.startswith("http://") or pi.startswith("https://")):
             raise HTTPException(status_code=422, detail="profile_image must be a data:image URL or http(s) URL")
+        if pi and pi.startswith("data:image/"):
+            if NSFW_IMAGE_ENFORCE:
+                try:
+                    nsfw = await moderate_image(pi)
+                except Exception as e:
+                    logger.warning("Image moderation failed: %s", e)
+                    raise HTTPException(status_code=400,
+                                        detail="Image could not be verified. Please try again.")
+                if nsfw:
+                    raise HTTPException(status_code=400,
+                                        detail="Profile picture contains inappropriate content")
         user.profile_image = pi or None
     await db.commit()
     await db.refresh(user)

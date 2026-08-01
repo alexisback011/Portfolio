@@ -8,6 +8,8 @@ BASE_URL = os.environ["REACT_APP_BACKEND_URL"].rstrip("/") if "REACT_APP_BACKEND
 ADMIN_EMAIL = "admin@alex.dev"
 ADMIN_PASSWORD = "admin123"
 
+TINY_JPEG_DATA_URL = ("data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAQABADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwCeiiivkD6o/9k=")
+
 
 @pytest.fixture
 def client():
@@ -68,7 +70,7 @@ class TestAuth:
         assert r.status_code == 401
 
     def test_update_profile_image(self, admin_client):
-        data_url = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAPh0dXZlA"
+        data_url = TINY_JPEG_DATA_URL
         r = admin_client.patch(f"{BASE_URL}/api/auth/me",
                                json={"profile_image": data_url})
         assert r.status_code == 200, r.text
@@ -513,3 +515,63 @@ class TestReview:
         # deleting again -> 404
         r = admin_client.delete(f"{BASE_URL}/api/review/{created['id']}")
         assert r.status_code == 404
+
+
+# ---------- NSFW moderation tests ----------
+class TestNsfwModeration:
+    def test_request_otp_rejects_profane_name(self, client):
+        email = f"nsfw_{uuid.uuid4().hex[:8]}@test.dev"
+        r = client.post(f"{BASE_URL}/api/auth/request-signup-otp",
+                        json={"name": "Fuckface", "email": email, "password": "pass1234"})
+        assert r.status_code == 400
+        assert "inappropriate" in r.json()["detail"].lower()
+
+    def test_register_rejects_profane_name(self, client):
+        email = f"nsfw2_{uuid.uuid4().hex[:8]}@test.dev"
+        r = client.post(f"{BASE_URL}/api/auth/register",
+                        json={"name": "Shithead", "email": email, "password": "pass1234"})
+        assert r.status_code == 400
+
+    def test_update_me_rejects_profane_name(self, client):
+        email = f"nsfw3_{uuid.uuid4().hex[:8]}@test.dev"
+        r = client.post(f"{BASE_URL}/api/auth/register",
+                        json={"name": "GOOD NAME", "email": email, "password": "pass1234"})
+        assert r.status_code == 200
+        r = client.patch(f"{BASE_URL}/api/auth/me", json={"name": "Damn fucker"})
+        assert r.status_code == 400
+        assert "inappropriate" in r.json()["detail"].lower()
+
+    def test_verify_otp_rejects_profane_name(self, client):
+        email = f"nsfw4_{uuid.uuid4().hex[:8]}@test.dev"
+        r = client.post(f"{BASE_URL}/api/auth/request-signup-otp",
+                        json={"name": "GOOD NAME", "email": email, "password": "pass1234"})
+        assert r.status_code == 200
+        r = client.post(f"{BASE_URL}/api/auth/verify-signup-otp",
+                        json={"name": "Fuckface", "email": email,
+                              "password": "pass1234", "otp": r.json().get("dev_otp", "")})
+        assert r.status_code == 400
+
+    def test_profile_image_benign_passes(self, admin_client):
+        r = admin_client.patch(f"{BASE_URL}/api/auth/me",
+                               json={"profile_image": TINY_JPEG_DATA_URL})
+        assert r.status_code == 200, r.text
+        assert r.json()["profile_image"] == TINY_JPEG_DATA_URL
+
+    def test_profile_image_non_image_still_422(self, admin_client):
+        r = admin_client.patch(f"{BASE_URL}/api/auth/me", json={"profile_image": "not-an-image"})
+        assert r.status_code == 422
+
+
+class TestNsfwDecisionLogic:
+    def test_exposed_class_flagged(self):
+        from server import _image_is_nsfw
+        assert _image_is_nsfw([{"class": "FEMALE_BREAST_EXPOSED", "score": 0.9}])
+        assert _image_is_nsfw([{"class": "MALE_GENITALIA_EXPOSED", "score": 0.55}])
+        assert _image_is_nsfw([{"class": "ANUS_EXPOSED", "score": 0.5}])
+
+    def test_benign_not_flagged(self):
+        from server import _image_is_nsfw
+        assert not _image_is_nsfw([])
+        assert not _image_is_nsfw([{"class": "FACE_FEMALE", "score": 0.99}])
+        assert not _image_is_nsfw([{"class": "FEET_EXPOSED", "score": 0.99}])
+        assert not _image_is_nsfw([{"class": "FEMALE_BREAST_EXPOSED", "score": 0.2}])

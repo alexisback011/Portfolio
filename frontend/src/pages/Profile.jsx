@@ -270,8 +270,8 @@ const Profile = () => {
       const small = await resizeImage(raw);
       await updateProfileImage(small);
       toast.success("Profile picture updated.");
-    } catch {
-      toast.error("Could not update profile picture.");
+    } catch (err) {
+      toast.error(formatApiErrorDetail(err.response?.data?.detail) || "Could not update profile picture.");
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
