@@ -2,10 +2,8 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import Marquee from "react-fast-marquee";
-import { Star, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { Star } from "lucide-react";
 import { API } from "../../lib/api";
-import { useAuth } from "../../context/AuthContext";
 
 const EASE = [0.85, 0, 0.15, 1];
 
@@ -32,11 +30,8 @@ const Stars = ({ value, size = 14 }) => (
 );
 
 export const Reviews = () => {
-  const { user } = useAuth();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ rating: 5, comment: "" });
-  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,33 +53,6 @@ export const Reviews = () => {
     };
   }, []);
 
-  const onChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
-
-  const isAuthed = Boolean(user && user.id);
-
-  const onSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.comment.trim()) {
-      toast.error("Please add a comment.");
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const { data } = await axios.post(
-        `${API}/review`,
-        { rating: form.rating, comment: form.comment },
-        { withCredentials: true }
-      );
-      setReviews((prev) => [data, ...prev]);
-      setForm({ rating: 5, comment: "" });
-      toast.success("Review posted. Thanks for the feedback!");
-    } catch {
-      toast.error("Something went wrong. Try again.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   return (
     <section
       id="reviews"
@@ -100,7 +68,7 @@ export const Reviews = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
-          <div className="md:col-span-5">
+          <div className="md:col-span-12">
             <motion.h2
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -137,99 +105,6 @@ export const Reviews = () => {
               </motion.div>
             )}
           </div>
-
-          {isAuthed && (
-            <form
-              onSubmit={onSubmit}
-              data-testid="review-form"
-              className="md:col-span-6 md:col-start-7 flex flex-col gap-6"
-            >
-              <div
-                data-testid="review-as"
-                className="inline-flex items-center gap-3 border border-white/20 px-4 py-3"
-              >
-                <div className="h-10 w-10 rounded-full border border-white/20 overflow-hidden bg-white/5 shrink-0">
-                  {user.profile_image ? (
-                    <img
-                      src={user.profile_image}
-                      alt={`${user.name} avatar`}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center font-display font-black text-primary">
-                      {user.name?.[0]?.toUpperCase()}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <span className="block text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                    Posting as
-                  </span>
-                  <span className="block font-display font-bold uppercase tracking-tight">
-                    {user.name}
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <span className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                  01 / Rating
-                </span>
-                <div className="mt-3 flex items-center gap-2" data-testid="review-rating">
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <motion.button
-                      key={n}
-                      type="button"
-                      aria-label={`${n} star${n > 1 ? "s" : ""}`}
-                      onClick={() => setForm((f) => ({ ...f, rating: n }))}
-                      whileHover={{ scale: 1.25, rotate: n <= form.rating ? 12 : 0 }}
-                      whileTap={{ scale: 0.85 }}
-                      animate={{ scale: n <= form.rating ? 1.15 : 1 }}
-                      transition={{ type: "spring", stiffness: 300, damping: 15 }}
-                    >
-                      <Star
-                        size={28}
-                        strokeWidth={n <= form.rating ? 2 : 1}
-                        className={`star-glitch ${
-                          n <= form.rating
-                            ? "fill-primary text-primary"
-                            : "fill-transparent text-white/25"
-                        }`}
-                      />
-                    </motion.button>
-                  ))}
-                </div>
-              </div>
-
-              <label className="block">
-                <span className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                  02 / Comment
-                </span>
-                <textarea
-                  name="comment"
-                  value={form.comment}
-                  onChange={onChange}
-                  rows={3}
-                  placeholder="What did you think?"
-                  data-testid="review-comment"
-                  className="mt-3 w-full bg-transparent border-b-2 border-white/20 focus:border-primary outline-none py-3 text-base md:text-lg font-light resize-none transition-colors duration-200"
-                />
-              </label>
-
-              <button
-                type="submit"
-                disabled={submitting}
-                data-testid="review-submit"
-                className="group inline-flex items-center justify-center gap-3 bg-primary text-black px-6 py-4 text-xs font-bold uppercase tracking-[0.25em] hover:bg-secondary disabled:opacity-60 transition-colors duration-200"
-              >
-                {submitting ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  "Post Review"
-                )}
-              </button>
-            </form>
-          )}
         </div>
 
         <div className="mt-12" data-testid="reviews-list">

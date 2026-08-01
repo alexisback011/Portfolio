@@ -17,6 +17,7 @@ import {
   Save,
   Pencil,
   ChevronDown,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth, formatApiErrorDetail } from "../context/AuthContext";
@@ -455,6 +456,38 @@ const Profile = () => {
             </p>
           </div>
         </motion.div>
+
+        {isAdmin && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: EASE }}
+            className="mt-10 flex flex-col md:flex-row md:items-center justify-between gap-6 border border-primary/40 bg-primary/5 p-8"
+            data-testid="apk-download-section"
+          >
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 shrink-0 rounded-full bg-primary text-black flex items-center justify-center">
+                <Download size={20} />
+              </div>
+              <div>
+                <span className="text-xs font-bold uppercase tracking-[0.3em] text-primary">
+                  Alex Admin App
+                </span>
+                <p className="mt-1 text-sm font-light text-muted-foreground">
+                  Get the Android app to manage the portfolio on the go.
+                </p>
+              </div>
+            </div>
+            <a
+              href="https://alex-admin-panel.onrender.com/AlexAdmin.apk"
+              download
+              data-testid="apk-download-btn"
+              className="inline-flex items-center justify-center gap-3 bg-primary text-black px-6 py-4 text-xs font-bold uppercase tracking-[0.25em] hover:bg-secondary transition-colors duration-200 shrink-0"
+            >
+              <Download size={14} /> Download AlexAdmin.apk
+            </a>
+          </motion.div>
+        )}
 
         <div className="mt-16 flex flex-col gap-2">
           {[
