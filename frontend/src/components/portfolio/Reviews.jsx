@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
 import Marquee from "react-fast-marquee";
-import { Star, Loader2, Lock } from "lucide-react";
+import { Star, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { API } from "../../lib/api";
 import { useAuth } from "../../context/AuthContext";
@@ -139,31 +138,7 @@ export const Reviews = () => {
             )}
           </div>
 
-          {!isAuthed ? (
-            <div
-              data-testid="review-login-prompt"
-              className="md:col-span-6 md:col-start-7 flex flex-col items-start gap-5 border border-white/15 p-8"
-            >
-              <span className="flex h-12 w-12 items-center justify-center border border-white/20">
-                <Lock size={18} className="text-primary" />
-              </span>
-              <div>
-                <h3 className="font-display text-2xl font-black uppercase tracking-tighter">
-                  Leave a review
-                </h3>
-                <p className="mt-2 text-sm font-light text-muted-foreground">
-                  Sign in to share your thoughts. Only registered members can post reviews.
-                </p>
-              </div>
-              <Link
-                to="/login"
-                data-testid="review-login-link"
-                className="bg-primary text-black px-6 py-3 text-xs font-bold uppercase tracking-[0.25em] hover:bg-secondary transition-colors duration-200"
-              >
-                Sign In / Create Account
-              </Link>
-            </div>
-          ) : (
+          {isAuthed && (
             <form
               onSubmit={onSubmit}
               data-testid="review-form"
