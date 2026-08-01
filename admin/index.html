@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ALEX. Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700;800&family=Unbounded:wght@500;700;900&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #050505;
+    --card: #0b0b0b;
+    --line: #1f1f1f;
+    --fg: #fafafa;
+    --muted: #9ca3af;
+    --dim: #525252;
+    --primary: #ff0059;
+    --secondary: #00ffff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'JetBrains Mono', monospace;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 20px; }
+
+  /* header */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 0; border-bottom: 2px solid var(--primary); margin-bottom: 28px;
+  }
+  .logo { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 20px; letter-spacing: 1px; text-transform: uppercase; }
+  .logo .dot { color: var(--primary); }
+  .badge {
+    font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--secondary);
+    border: 1px solid var(--line); padding: 6px 10px; margin-left: 12px; vertical-align: middle;
+  }
+  .btn {
+    font-family: inherit; cursor: pointer; font-weight: 700; font-size: 11px;
+    letter-spacing: 2px; text-transform: uppercase; border: none; padding: 12px 18px;
+    background: var(--primary); color: #000; transition: background .2s, color .2s, border-color .2s;
+  }
+  .btn:hover { background: var(--secondary); }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+  .btn-ghost:hover { color: var(--fg); border-color: var(--primary); }
+  .btn-danger { background: transparent; color: #f87171; border: 1px solid #7f1d1d; }
+  .btn-danger:hover { background: #7f1d1d; color: #fff; border-color: #7f1d1d; }
+  .btn-sm { padding: 8px 12px; font-size: 9px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* login */
+  .login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+  .login-card { width: 100%; max-width: 380px; border: 1px solid var(--line); background: var(--card); padding: 32px; }
+  .login-card h1 { font-family: 'Unbounded', sans-serif; font-size: 24px; text-transform: uppercase; letter-spacing: -1px; margin-bottom: 6px; }
+  .login-card p { color: var(--muted); font-size: 13px; margin-bottom: 26px; }
+  label { display: block; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 22px; }
+  input {
+    width: 100%; margin-top: 8px; background: transparent; border: none; border-bottom: 2px solid #333;
+    color: var(--fg); font-family: inherit; font-size: 15px; font-weight: 300; padding: 10px 0; outline: none;
+  }
+  input:focus { border-bottom-color: var(--primary); }
+  .err { color: #f87171; font-size: 12px; margin-top: 14px; min-height: 16px; }
+  .login-card .btn { width: 100%; margin-top: 8px; }
+
+  /* tabs */
+  .tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 26px; }
+  .tab {
+    font-family: inherit; cursor: pointer; background: transparent; color: var(--muted);
+    border: 1px solid var(--line); padding: 12px 18px; font-size: 11px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase; transition: all .2s;
+  }
+  .tab.active { background: var(--primary); color: #000; border-color: var(--primary); }
+  .tab .count { margin-left: 8px; opacity: .7; }
+
+  .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .toolbar h2 { font-family: 'Unbounded', sans-serif; font-size: 16px; text-transform: uppercase; letter-spacing: 1px; }
+  .toolbar .sub { font-size: 10px; color: var(--dim); margin-top: 4px; letter-spacing: 1px; }
+
+  /* cards */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+  .card { border: 1px solid var(--line); background: var(--card); transition: border-color .2s; }
+  .card:hover { border-color: var(--primary); }
+  .card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 16px; }
+  .who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .avatar {
+    width: 42px; height: 42px; border-radius: 50%; border: 1px solid #333; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+    font-family: 'Unbounded', sans-serif; font-weight: 900; color: var(--primary); background: #111; font-size: 16px;
+  }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .name { font-family: 'Unbounded', sans-serif; font-weight: 700; text-transform: uppercase; font-size: 13px; }
+  .meta { font-size: 11px; color: var(--muted); margin-top: 3px; word-break: break-all; }
+  .role { font-size: 9px; letter-spacing: 2px; font-weight: 700; }
+  .role.admin { color: var(--primary); }
+  .role.user { color: var(--secondary); }
+  .chip { font-size: 9px; letter-spacing: 2px; font-weight: 700; padding: 3px 6px; border: 1px solid #7f1d1d; color: #f87171; text-transform: uppercase; }
+  .card-body { padding: 0 16px 16px; }
+  .stars { color: var(--primary); letter-spacing: 2px; font-size: 14px; }
+  .txt { font-size: 13px; color: var(--muted); font-weight: 300; line-height: 1.6; margin-top: 8px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .link { color: var(--secondary); font-size: 12px; text-decoration: none; }
+  .link:hover { color: var(--primary); }
+  .subrow { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-top: 1px solid #141414; font-size: 11px; color: var(--muted); }
+  .subrow code { font-size: 10px; color: #8b8b8b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
+  .subrow .grow { flex: 1; min-width: 0; }
+  .toggle {
+    width: 100%; text-align: left; background: none; border: none; border-top: 1px solid #141414;
+    color: var(--muted); font-family: inherit; font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    padding: 12px 16px; cursor: pointer; font-weight: 700;
+  }
+  .toggle:hover { color: var(--primary); }
+  .logins { border-top: 1px solid #141414; padding: 14px 16px; max-height: 200px; overflow: auto; }
+  .login-item { font-size: 11px; color: var(--muted); margin-bottom: 12px; }
+  .login-item .ip { color: var(--secondary); }
+  .login-item .when { color: var(--dim); font-size: 10px; margin-top: 2px; }
+  .login-item .ua { color: #555; font-size: 10px; margin-top: 2px; word-break: break-all; }
+
+  .empty { color: var(--dim); font-size: 13px; padding: 20px 0; }
+  .loading { color: var(--dim); font-size: 13px; padding: 20px 0; }
+
+  /* toast */
+  .toasts { position: fixed; top: 20px; right: 20px; z-index: 999; display: flex; flex-direction: column; gap: 10px; }
+  .toast {
+    background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--secondary);
+    color: var(--fg); font-size: 12px; padding: 12px 16px; box-shadow: 0 8px 30px rgba(0,0,0,.5);
+    animation: slide .25s ease; max-width: 320px;
+  }
+  .toast.error { border-left-color: #f87171; }
+  @keyframes slide { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: none; } }
+
+  .hidden { display: none !important; }
+  @media (max-width: 640px) {
+    .grid { grid-template-columns: 1fr; }
+    header { flex-wrap: wrap; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+  <div class="toasts" id="toasts"></div>
+
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <h1>ALEX.<span style="color:var(--primary)">ADMIN</span></h1>
+      <p>Authorized personnel only. Sign in with an admin account.</p>
+      <form id="loginForm">
+        <label>
+          Email
+          <input type="email" id="email" autocomplete="username" required />
+        </label>
+        <label>
+          Password
+          <input type="password" id="password" autocomplete="current-password" required />
+        </label>
+        <div class="err" id="loginErr"></div>
+        <button class="btn" type="submit" id="loginBtn">Sign In</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="app" class="hidden">
+    <div class="wrap">
+      <header>
+        <div>
+          <span class="logo">ALEX<span class="dot">.</span></span>
+          <span class="badge">Admin Panel</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;">
+          <span id="whoami" style="font-size:11px;color:var(--muted);"></span>
+          <button class="btn btn-ghost btn-sm" id="logoutBtn">Logout</button>
+        </div>
+      </header>
+
+      <div class="tabs" id="tabs">
+        <button class="tab active" data-tab="profiles">Profiles <span class="count" id="cntProfiles">–</span></button>
+        <button class="tab" data-tab="messages">Messages <span class="count" id="cntMessages">–</span></button>
+        <button class="tab" data-tab="reviews">Reviews <span class="count" id="cntReviews">–</span></button>
+      </div>
+
+      <div id="panel"></div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  var DEFAULT_API = "https://portfolio-a6in.onrender.com/api";
+  function resolveApi() {
+    try {
+      var p = new URLSearchParams(window.location.search).get("api");
+      if (p) { localStorage.setItem("alex_admin_api", p); return p.replace(/\/$/, ""); }
+    } catch (e) {}
+    return (localStorage.getItem("alex_admin_api") || DEFAULT_API).replace(/\/$/, "");
+  }
+  var API = resolveApi();
+
+  var $ = function (id) { return document.getElementById(id); };
+  var state = { tab: "profiles", users: [], messages: [], reviews: [], expanded: {} };
+
+  function toast(msg, isError) {
+    var t = document.createElement("div");
+    t.className = "toast" + (isError ? " error" : "");
+    t.textContent = msg;
+    $("toasts").appendChild(t);
+    setTimeout(function () { t.remove(); }, 3200);
+  }
+
+  function apiError(e) {
+    var d = e && e.detail;
+    if (Array.isArray(d)) { return d.map(function (x) { return x.msg; }).join(" "); }
+    if (typeof d === "string") { return d.charAt(0).toUpperCase() + d.slice(1); }
+    if (e && e.msg) return e.msg;
+    return "Something went wrong.";
+  }
+
+  function req(method, path, body) {
+    return fetch(API + path, {
+      method: method,
+      credentials: "include",
+      headers: body ? { "Content-Type": "application/json" } : undefined,
+      body: body ? JSON.stringify(body) : undefined
+    }).then(function (r) {
+      return r.json().catch(function () { return null; }).then(function (data) {
+        if (!r.ok) { var err = new Error(apiError(data || {})); err.status = r.status; err.data = data || {}; throw err; }
+        return data;
+      });
+    });
+  }
+
+  /* ---------- auth ---------- */
+  $("loginForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var btn = $("loginBtn");
+    btn.disabled = true;
+    btn.textContent = "Signing in...";
+    $("loginErr").textContent = "";
+    req("POST", "/auth/login", { email: $("email").value.trim(), password: $("password").value })
+      .then(function (data) {
+        if (data.role !== "admin") throw { status: 403, detail: "This account is not an admin." };
+        enter(data);
+      })
+      .catch(function (err) { $("loginErr").textContent = err.status === 403 ? "This account is not an admin." : apiError(err); })
+      .finally(function () { btn.disabled = false; btn.textContent = "Sign In"; });
+  });
+
+  $("logoutBtn").addEventListener("click", function () {
+    req("POST", "/auth/logout").catch(function () {}).finally(function () {
+      localStorage.removeItem("alex_admin_api");
+      location.reload();
+    });
+  });
+
+  function enter(me) {
+    $("loginScreen").classList.add("hidden");
+    $("app").classList.remove("hidden");
+    $("whoami").textContent = me.email + " \u00b7 " + (me.role || "admin").toUpperCase();
+    boot();
+  }
+
+  /* ---------- tabs ---------- */
+  $("tabs").addEventListener("click", function (e) {
+    var b = e.target.closest(".tab");
+    if (!b) return;
+    document.querySelectorAll(".tab").forEach(function (x) { x.classList.remove("active"); });
+    b.classList.add("active");
+    state.tab = b.getAttribute("data-tab");
+    render();
+    load(state.tab);
+  });
+
+  function boot() {
+    load("profiles");
+    setInterval(function () { load(state.tab); }, 10000);
+  }
+
+  /* ---------- data ---------- */
+  function load(tab) {
+    if (tab === "profiles") {
+      req("GET", "/admin/users").then(function (d) { state.users = d; render(); }).catch(onLoadError);
+    } else if (tab === "messages") {
+      req("GET", "/contact").then(function (d) { state.messages = d; render(); }).catch(onLoadError);
+    } else if (tab === "reviews") {
+      req("GET", "/review").then(function (d) { state.reviews = d; render(); }).catch(onLoadError);
+    }
+  }
+
+  function onLoadError(err) {
+    if (err.status === 401 || err.status === 403) {
+      toast("Session expired. Sign in again.", true);
+      location.reload();
+    } else {
+      toast(apiError(err), true);
+    }
+  }
+
+  /* ---------- actions ---------- */
+  window._ban = function (id, name) {
+    if (!confirm("Ban " + name + "? They will be locked out immediately.")) return;
+    req("PATCH", "/admin/users/" + id + "/ban", {}).then(function (u) {
+      state.users = state.users.map(function (x) { return x.id === u.id ? u : x; });
+      render(); toast(name + " banned.");
+    }).catch(function (e) { toast(apiError(e), true); });
+  };
+  window._unban = function (id, name) {
+    if (!confirm("Unban " + name + "?")) return;
+    req("PATCH", "/admin/users/" + id + "/unban", {}).then(function (u) {
+      state.users = state.users.map(function (x) { return x.id === u.id ? u : x; });
+      render(); toast(name + " unbanned.");
+    }).catch(function (e) { toast(apiError(e), true); });
+  };
+  window._delUser = function (id, name) {
+    if (!confirm("Delete " + name + " permanently? Their reviews and login history will be removed too.")) return;
+    req("DELETE", "/admin/users/" + id).then(function () {
+      state.users = state.users.filter(function (x) { return x.id !== id; });
+      render(); toast(name + " deleted.");
+    }).catch(function (e) { toast(apiError(e), true); });
+  };
+  window._delMsg = function (id) {
+    req("DELETE", "/contact/" + id).then(function () {
+      state.messages = state.messages.filter(function (x) { return x.id !== id; });
+      render(); toast("Message deleted.");
+    }).catch(function (e) { toast(apiError(e), true); });
+  };
+  window._delReview = function (id) {
+    req("DELETE", "/review/" + id).then(function () {
+      state.reviews = state.reviews.filter(function (x) { return x.id !== id; });
+      render(); toast("Review deleted.");
+    }).catch(function (e) { toast(apiError(e), true); });
+  };
+  window._toggleLogins = function (id) {
+    state.expanded[id] = !state.expanded[id];
+    render();
+  };
+  window._copy = function (text, label) {
+    navigator.clipboard.writeText(text).then(function () { toast(label + " copied."); })
+      .catch(function () { toast("Could not copy.", true); });
+  };
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function fmt(d) {
+    if (!d) return "never";
+    return new Date(d).toLocaleString();
+  }
+  function stars(n) {
+    var s = "";
+    for (var i = 1; i <= 5; i++) s += i <= n ? "\u2605" : "\u2606";
+    return s;
+  }
+
+  /* ---------- render ---------- */
+  function render() {
+    $("cntProfiles").textContent = state.users.length;
+    $("cntMessages").textContent = state.messages.length;
+    $("cntReviews").textContent = state.reviews.length;
+
+    if (state.tab === "profiles") renderUsers();
+    else if (state.tab === "messages") renderMessages();
+    else renderReviews();
+  }
+
+  function renderUsers() {
+    var p = $("panel");
+    p.innerHTML = '<div class="toolbar"><div><h2>Registered Profiles</h2><div class="sub">' + state.users.length + " total \u00b7 syncs every 10s</div></div></div>";
+    if (state.users.length === 0) { p.innerHTML += '<div class="empty">No registered users yet.</div>'; return; }
+    var html = '<div class="grid">';
+    state.users.forEach(function (u) {
+      var av = u.profile_image
+        ? '<img src="' + esc(u.profile_image) + '" alt="" />'
+        : esc((u.name || "?")[0].toUpperCase());
+      var logins = state.expanded[u.id]
+        ? '<div class="logins">' + (u.logins.length === 0
+            ? '<div class="login-item">No recorded logins.</div>'
+            : u.logins.map(function (l) {
+                return '<div class="login-item"><div class="ip">' + esc(l.ip_address || "unknown ip") + '</div>' +
+                  '<div class="when">' + fmt(l.created_at) + (l.device ? " \u00b7 " + esc(l.device) : "") + '</div>' +
+                  (l.user_agent ? '<div class="ua">' + esc(l.user_agent) + "</div>" : "") + "</div>";
+              }).join(""))
+        + "</div>" : "";
+      var actions = "";
+      if (u.role === "admin") {
+        actions = '<span class="meta">Protected</span>';
+      } else {
+        actions = '<button class="btn btn-danger btn-sm" onclick="_delUser(\'' + u.id + '\',\'' + esc(u.name).replace(/'/g, "\\'") + '\')">Delete</button>' +
+          (u.is_banned
+            ? '<button class="btn btn-sm" style="background:transparent;border:1px solid var(--secondary);color:var(--secondary);" onclick="_unban(\'' + u.id + '\',\'' + esc(u.name).replace(/'/g, "\\'") + '\')">Unban</button>'
+            : '<button class="btn btn-ghost btn-sm" onclick="_ban(\'' + u.id + '\',\'' + esc(u.name).replace(/'/g, "\\'") + '\')">Ban</button>');
+      }
+      html +=
+        '<div class="card">' +
+          '<div class="card-head"><div class="who">' +
+            '<div class="avatar">' + av + "</div>" +
+            "<div>" +
+              '<div class="name">' + esc(u.name) + '</div>' +
+              '<a class="meta link" href="mailto:' + esc(u.email) + '">' + esc(u.email) + "</a>" +
+              '<div><span class="role ' + esc(u.role) + '">' + esc(u.role) + "</span>" + (u.is_banned ? ' <span class="chip">Banned</span>' : "") + "</div>" +
+            "</div></div>" +
+            '<div class="meta" style="text-align:right;">' + fmt(u.created_at) + "</div>" +
+          "</div>" +
+          '<div class="subrow"><span>ID</span><span class="grow"><code>' + esc(u.id) + "</code></span>" +
+            '<button class="btn btn-ghost btn-sm" onclick="_copy(\'' + u.id + '\',\'User ID\')">Copy</button></div>' +
+          '<div class="subrow"><span>Hash</span><span class="grow"><code>' + esc(u.password_hash) + "</code></span>" +
+            '<button class="btn btn-ghost btn-sm" onclick="_copy(\'' + esc(u.password_hash).replace(/'/g, "\\'") + '\',\'Hash\')">Copy</button></div>' +
+          '<div class="subrow"><span>Logins</span><span>' + u.login_count + " \u00b7 last " + fmt(u.last_login) + "</span></div>" +
+          '<div class="card-body"><div class="actions">' + actions + "</div></div>" +
+          '<button class="toggle" onclick="_toggleLogins(\'' + u.id + '\')">' + (state.expanded[u.id] ? "Hide login history" : "View login history (" + u.logins.length + ")") + "</button>" +
+          logins +
+        "</div>";
+    });
+    p.innerHTML += html + "</div>";
+  }
+
+  function renderMessages() {
+    var p = $("panel");
+    p.innerHTML = '<div class="toolbar"><div><h2>Message Inbox</h2><div class="sub">' + state.messages.length + " total \u00b7 syncs every 10s</div></div></div>";
+    if (state.messages.length === 0) { p.innerHTML += '<div class="empty">No messages yet. Contact form submissions appear here.</div>'; return; }
+    var html = '<div class="grid">';
+    state.messages.forEach(function (m) {
+      html +=
+        '<div class="card"><div class="card-head"><div class="who"><div class="avatar">' + esc((m.name || "?")[0].toUpperCase()) + "</div>" +
+          "<div><div class=\"name\">" + esc(m.name) + "</div>" +
+          '<a class="meta link" href="mailto:' + esc(m.email) + '">' + esc(m.email) + "</a></div></div>" +
+          '<div class="meta" style="text-align:right;">' + fmt(m.created_at) + "</div></div>" +
+          '<div class="card-body"><p class="txt">' + esc(m.message) + "</p>" +
+          '<div class="actions"><button class="btn btn-danger btn-sm" onclick="_delMsg(\'' + m.id + '\')">Delete</button></div></div></div>';
+    });
+    p.innerHTML += html + "</div>";
+  }
+
+  function renderReviews() {
+    var p = $("panel");
+    p.innerHTML = '<div class="toolbar"><div><h2>Reviews</h2><div class="sub">' + state.reviews.length + " total \u00b7 syncs every 10s</div></div></div>";
+    if (state.reviews.length === 0) { p.innerHTML += '<div class="empty">No reviews yet. Viewer comments appear here.</div>'; return; }
+    var html = '<div class="grid">';
+    state.reviews.forEach(function (r) {
+      var av = r.profile_image
+        ? '<img src="' + esc(r.profile_image) + '" alt="" />'
+        : esc((r.name || "?")[0].toUpperCase());
+      html +=
+        '<div class="card"><div class="card-head"><div class="who">' +
+          '<div class="avatar">' + av + "</div>" +
+          '<div><div class="name">' + esc(r.name) + '</div><div class="stars">' + stars(r.rating) + "</div></div></div>" +
+          '<div class="meta" style="text-align:right;">' + fmt(r.created_at) + "</div></div>" +
+          '<div class="card-body"><p class="txt">' + esc(r.comment) + "</p>" +
+          '<div class="actions"><button class="btn btn-danger btn-sm" onclick="_delReview(\'' + r.id + '\')">Delete</button></div></div></div>';
+    });
+    p.innerHTML += html + "</div>";
+  }
+
+  /* ---------- boot: check existing session ---------- */
+  req("GET", "/auth/me").then(function (me) {
+    if (me && me.role === "admin") { enter(me); }
+  }).catch(function () {});
+})();
+</script>
+</body>
+</html>
