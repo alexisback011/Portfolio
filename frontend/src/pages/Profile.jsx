@@ -16,6 +16,7 @@ import {
   Settings,
   Save,
   Pencil,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth, formatApiErrorDetail } from "../context/AuthContext";
@@ -455,31 +456,79 @@ const Profile = () => {
           </div>
         </motion.div>
 
-        <div className="mt-16 flex flex-wrap items-center gap-4">
+        <div className="mt-16 flex flex-col gap-2">
           {[
-            { key: "manage", label: "Manage Profile", icon: Settings },
-            { key: "review", label: "Submit Review", icon: Star },
-            { key: "my-reviews", label: "My Reviews", icon: Pencil },
-          ].map((t) => (
-            <button
-              key={t.key}
-              data-testid={`user-tab-${t.key}`}
-              onClick={() => setUserTab(t.key)}
-              className={`inline-flex items-center gap-2 border px-5 py-3 text-xs font-bold uppercase tracking-[0.2em] transition-colors ${
-                userTab === t.key
-                  ? "border-primary bg-primary text-black"
-                  : "border-white/20 text-muted-foreground hover:border-white/40 hover:text-foreground"
-              }`}
-            >
-              <t.icon size={14} />
-              {t.label}
-              {t.key === "my-reviews" && (
-                <span className={userTab === t.key ? "text-black/70" : "text-muted-foreground"}>
-                  {myReviews.length}
+            {
+              key: "manage",
+              label: "Manage Profile",
+              desc: "Update your name, email and password",
+              icon: Settings,
+            },
+            {
+              key: "review",
+              label: "Reviews",
+              desc: "Leave a rating and comment about the work",
+              icon: Star,
+            },
+            {
+              key: "my-reviews",
+              label: "My Reviews",
+              desc: "Edit or delete reviews you have posted",
+              icon: Pencil,
+            },
+          ].map((t) => {
+            const open = userTab === t.key;
+            return (
+              <button
+                key={t.key}
+                data-testid={`user-tab-${t.key}`}
+                onClick={() => setUserTab(t.key)}
+                className={`group flex items-center justify-between gap-4 border px-6 py-5 text-left transition-colors ${
+                  open
+                    ? "border-primary bg-primary/10"
+                    : "border-white/15 hover:border-white/40 hover:bg-white/[0.02]"
+                }`}
+              >
+                <span className="flex items-center gap-4">
+                  <t.icon
+                    size={16}
+                    className={`shrink-0 ${
+                      open ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                    }`}
+                  />
+                  <span className="flex flex-col">
+                    <span
+                      className={`text-xs font-bold uppercase tracking-[0.25em] ${
+                        open ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
+                      }`}
+                    >
+                      {t.label}
+                    </span>
+                    <span className="mt-1 text-xs font-light text-muted-foreground/80">
+                      {t.desc}
+                    </span>
+                  </span>
                 </span>
-              )}
-            </button>
-          ))}
+                <span className="flex items-center gap-4">
+                  {t.key === "my-reviews" && (
+                    <span
+                      className={`text-[10px] font-bold uppercase tracking-[0.2em] ${
+                        open ? "text-primary" : "text-muted-foreground"
+                      }`}
+                    >
+                      {myReviews.length}
+                    </span>
+                  )}
+                  <ChevronDown
+                    size={16}
+                    className={`transition-transform duration-300 ${
+                      open ? "rotate-180 text-primary" : "text-muted-foreground"
+                    }`}
+                  />
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {userTab === "manage" && (
