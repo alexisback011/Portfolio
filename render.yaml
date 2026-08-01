@@ -24,6 +24,18 @@ services:
         value: admin@alex.dev
       - key: ADMIN_PASSWORD
         sync: false
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      - key: SITE_NAME
+        value: Alex Portfolio
       - key: APP_ENV
         value: production
 
