@@ -622,6 +622,15 @@ class TestOtpCustomization:
         assert "#00ffff" in html
         assert "expires in" in html
 
+    def test_email_html_logo(self):
+        import server
+        server.SITE_URL = "https://example.com"
+        html = server.build_email_html("T", "m", "1")
+        assert "https://example.com/alex-logo.gif" in html
+        server.SITE_URL = ""
+        html = server.build_email_html("T", "m", "1")
+        assert "alex-logo.gif" not in html
+
     def test_provider_chain(self):
         from server import _provider_chain, EMAIL_PROVIDER
         assert "smtp" in _provider_chain()

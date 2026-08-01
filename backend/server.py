@@ -443,6 +443,20 @@ def send_email(to_email: str, subject: str, body: str, html: str = "") -> bool:
 
 
 def build_email_html(title: str, message: str, code: str = "") -> str:
+    logo_url = f"{SITE_URL}/alex-logo.gif" if SITE_URL else ""
+    if logo_url:
+        logo_html = (
+            f'<img src="{logo_url}" alt="{SITE_NAME}" width="210" '
+            f'style="display:block;max-width:210px;height:auto;'
+            f'background:#000000;border-radius:4px;" />'
+        )
+    else:
+        logo_html = (
+            f'<div style="color:#fafafa;font-size:19px;font-weight:800;'
+            f'font-family:\'Unbounded\',\'Arial Black\',sans-serif;'
+            f'text-transform:uppercase;letter-spacing:1px;">'
+            f'{SITE_NAME}<span style="color:{EMAIL_ACCENT};">.</span></div>'
+        )
     code_html = ""
     if code:
         code_html = (
@@ -470,12 +484,9 @@ def build_email_html(title: str, message: str, code: str = "") -> str:
         f'border-radius:8px;overflow:hidden;">'
         f'<tr><td style="background:#000000;padding:22px 26px;'
         f'border-bottom:2px solid {EMAIL_ACCENT};">'
-        f'<div style="color:#fafafa;font-size:19px;font-weight:800;'
-        f'font-family:\'Unbounded\',\'Arial Black\',sans-serif;'
-        f'text-transform:uppercase;letter-spacing:1px;">'
-        f'{SITE_NAME}<span style="color:{EMAIL_ACCENT};">.</span></div>'
+        f'{logo_html}'
         f'<div style="color:#00ffff;font-size:10px;text-transform:uppercase;'
-        f'letter-spacing:4px;margin-top:6px;">secure mailbox &gt;&gt;</div></td></tr>'
+        f'letter-spacing:4px;margin-top:10px;">secure mailbox &gt;&gt;</div></td></tr>'
         f'<tr><td style="padding:28px 26px;">'
         f'<h1 style="margin:0 0 14px 0;color:#fafafa;font-size:20px;'
         f'font-weight:800;text-transform:uppercase;letter-spacing:1px;'
