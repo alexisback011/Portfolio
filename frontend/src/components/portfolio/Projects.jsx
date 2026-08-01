@@ -33,6 +33,8 @@ const ProjectCard = ({ project, i }) => {
           style={{ y: imgY, scale: 1.2 }}
           src={project.gif}
           alt={project.title}
+          loading="lazy"
+          decoding="async"
           className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-[filter] duration-500"
         />
         <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors duration-300" />

@@ -760,6 +760,18 @@ class AdminUserOut(BaseModel):
     logins: List[LoginRecordOut]
 
 
+class OtpRecordOut(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: int
+    email: str
+    purpose: str
+    code_hash: str
+    expires_at: datetime
+    attempts: int
+    used: bool
+    created_at: datetime
+
+
 def user_public(user: User) -> dict:
     return {"id": str(user.id), "name": user.name, "email": user.email, "role": user.role,
             "is_banned": user.is_banned, "profile_image": user.profile_image}
@@ -1202,6 +1214,24 @@ async def delete_user(user_id: int, admin=Depends(require_admin), db: AsyncSessi
     await db.delete(user)
     await db.commit()
     return {"message": "User deleted"}
+
+
+@api_router.get("/admin/logins", response_model=List[LoginRecordOut])
+async def list_logins(admin=Depends(require_admin), db: AsyncSession = Depends(get_db)):
+    stmt = select(LoginRecord).order_by(LoginRecord.created_at.desc()).limit(200)
+    rows = (await db.scalars(stmt)).all()
+    return [{"id": r.id, "email": r.email, "ip_address": r.ip_address,
+             "user_agent": r.user_agent, "device": r.device,
+             "created_at": r.created_at} for r in rows]
+
+
+@api_router.get("/admin/otps", response_model=List[OtpRecordOut])
+async def list_otps(admin=Depends(require_admin), db: AsyncSession = Depends(get_db)):
+    stmt = select(OtpRecord).order_by(OtpRecord.created_at.desc()).limit(200)
+    rows = (await db.scalars(stmt)).all()
+    return [{"id": r.id, "email": r.email, "purpose": r.purpose, "code_hash": r.code_hash,
+             "expires_at": r.expires_at, "attempts": r.attempts, "used": r.used,
+             "created_at": r.created_at} for r in rows]
 
 
 app.include_router(api_router)

@@ -31,6 +31,13 @@ export const Nav = () => {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
   return (
     <motion.nav
       data-testid="main-nav"
@@ -91,7 +98,7 @@ export const Nav = () => {
         <button
           data-testid="nav-menu-toggle"
           onClick={() => setOpen((v) => !v)}
-          className="md:hidden text-foreground"
+          className="md:hidden p-2 -m-2 text-foreground"
           aria-label="Toggle menu"
         >
           {open ? <X size={24} /> : <Menu size={24} />}
@@ -107,7 +114,7 @@ export const Nav = () => {
             exit={{ height: 0, opacity: 0 }}
             className="md:hidden overflow-hidden bg-black/90 backdrop-blur-xl border-t border-white/10"
           >
-            <div className="flex flex-col px-6 py-6 gap-5">
+            <div className="flex flex-col px-6 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] gap-5">
               {LINKS.map((l) => (
                 <a
                   key={l.href}

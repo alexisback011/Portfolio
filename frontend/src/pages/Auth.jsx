@@ -126,7 +126,7 @@ const Auth = () => {
     "mt-3 w-full bg-transparent border-b-2 border-white/20 focus:border-primary outline-none py-3 text-base md:text-lg font-light transition-colors duration-200";
 
   return (
-    <div className="relative min-h-screen bg-background text-foreground flex flex-col">
+    <div className="relative min-h-[100vh] min-h-[100dvh] bg-background text-foreground flex flex-col">
       <div className="noise-overlay" />
       <div className="absolute inset-0 grid-bg opacity-30 pointer-events-none" />
 

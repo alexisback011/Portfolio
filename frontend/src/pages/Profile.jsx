@@ -18,6 +18,9 @@ import {
   Pencil,
   ChevronDown,
   Download,
+  History,
+  KeyRound,
+  Database,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth, formatApiErrorDetail } from "../context/AuthContext";
@@ -62,6 +65,10 @@ const Profile = () => {
   const [loadingReviews, setLoadingReviews] = useState(true);
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
+  const [logins, setLogins] = useState([]);
+  const [loadingLogins, setLoadingLogins] = useState(true);
+  const [otps, setOtps] = useState([]);
+  const [loadingOtps, setLoadingOtps] = useState(true);
   const [expandedUser, setExpandedUser] = useState({});
   const [tab, setTab] = useState("profiles");
   const [userTab, setUserTab] = useState("manage");
@@ -99,19 +106,6 @@ const Profile = () => {
       } finally {
         if (!cancelled) setLoadingMsgs(false);
       }
-    };
-    load();
-    const interval = setInterval(load, 10000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, [isAdmin]);
-
-  useEffect(() => {
-    if (!isAdmin) return;
-    let cancelled = false;
-    const load = async () => {
       try {
         const { data } = await axios.get(`${API}/admin/users`, { withCredentials: true });
         if (!cancelled) setUsers(data);
@@ -120,19 +114,38 @@ const Profile = () => {
       } finally {
         if (!cancelled) setLoadingUsers(false);
       }
+      try {
+        const { data } = await axios.get(`${API}/review`, { withCredentials: true });
+        if (!cancelled) setReviews(data);
+      } catch {
+        if (!cancelled) setReviews([]);
+      } finally {
+        if (!cancelled) setLoadingReviews(false);
+      }
+      try {
+        const { data } = await axios.get(`${API}/admin/logins`, { withCredentials: true });
+        if (!cancelled) setLogins(data);
+      } catch {
+        if (!cancelled) setLogins([]);
+      } finally {
+        if (!cancelled) setLoadingLogins(false);
+      }
+      try {
+        const { data } = await axios.get(`${API}/admin/otps`, { withCredentials: true });
+        if (!cancelled) setOtps(data);
+      } catch {
+        if (!cancelled) setOtps([]);
+      } finally {
+        if (!cancelled) setLoadingOtps(false);
+      }
     };
     load();
-    if (tab === "profiles") {
-      const interval = setInterval(load, 10000);
-      return () => {
-        cancelled = true;
-        clearInterval(interval);
-      };
-    }
+    const interval = setInterval(load, 10000);
     return () => {
       cancelled = true;
+      clearInterval(interval);
     };
-  }, [isAdmin, tab]);
+  }, [isAdmin]);
 
   const copyToClipboard = async (text, label) => {
     try {
@@ -322,24 +335,6 @@ const Profile = () => {
     }
   };
 
-  useEffect(() => {
-    if (!isAdmin || tab !== "reviews") return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data } = await axios.get(`${API}/review`, { withCredentials: true });
-        if (!cancelled) setReviews(data);
-      } catch {
-        if (!cancelled) setReviews([]);
-      } finally {
-        if (!cancelled) setLoadingReviews(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [tab, isAdmin]);
-
   const onDeleteReview = async (id) => {
     try {
       await axios.delete(`${API}/review/${id}`, { withCredentials: true });
@@ -371,7 +366,7 @@ const Profile = () => {
   if (!user || !user.id) return null;
 
   return (
-    <div className="relative min-h-screen bg-background text-foreground">
+    <div className="relative min-h-[100vh] min-h-[100dvh] bg-background text-foreground">
       <div className="noise-overlay" />
       <div className="absolute inset-0 grid-bg opacity-25 pointer-events-none" />
 
@@ -868,29 +863,75 @@ const Profile = () => {
         )}
 
         {isAdmin && (
-          <div className="mt-16 flex flex-wrap items-center gap-4">
-            {[
-              { key: "profiles", label: "Profiles", icon: Users, count: users.length },
-              { key: "messages", label: "Messages", icon: Mail, count: messages.length },
-              { key: "reviews", label: "Reviews", icon: Star, count: reviews.length },
-            ].map((t) => (
-              <button
-                key={t.key}
-                data-testid={`tab-${t.key}`}
-                onClick={() => setTab(t.key)}
-                className={`inline-flex items-center gap-2 border px-5 py-3 text-xs font-bold uppercase tracking-[0.2em] transition-colors ${
-                  tab === t.key
-                    ? "border-primary bg-primary text-black"
-                    : "border-white/20 text-muted-foreground hover:border-white/40 hover:text-foreground"
-                }`}
-              >
-                <t.icon size={14} />
-                {t.label}
-                <span className={tab === t.key ? "text-black/70" : "text-muted-foreground"}>
-                  {t.count}
-                </span>
-              </button>
-            ))}
+          <div className="mt-16">
+            <div className="flex items-center gap-3">
+              <Database size={16} className="text-primary" />
+              <span className="text-xs font-bold uppercase tracking-[0.3em]">Database Overview</span>
+              <span className="h-px flex-1 bg-white/15" />
+            </div>
+
+            <div className="mt-6 grid grid-cols-2 md:grid-cols-5 gap-4" data-testid="db-overview">
+              {[
+                { key: "profiles", label: "Profiles", icon: Users, count: users.length },
+                { key: "reviews", label: "Reviews", icon: Star, count: reviews.length },
+                { key: "messages", label: "Messages", icon: Mail, count: messages.length },
+                { key: "logins", label: "Logins", icon: History, count: logins.length },
+                { key: "otps", label: "OTP Codes", icon: KeyRound, count: otps.length },
+              ].map((t) => (
+                <button
+                  key={t.key}
+                  data-testid={`stat-${t.key}`}
+                  onClick={() => setTab(t.key)}
+                  className={`group border p-5 text-left transition-colors ${
+                    tab === t.key
+                      ? "border-primary bg-primary/10"
+                      : "border-white/15 hover:border-white/40 hover:bg-white/[0.02]"
+                  }`}
+                >
+                  <t.icon
+                    size={16}
+                    className={tab === t.key ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}
+                  />
+                  <span
+                    className={`mt-3 block font-display text-3xl font-black ${
+                      tab === t.key ? "text-primary" : "text-foreground"
+                    }`}
+                  >
+                    {t.count}
+                  </span>
+                  <span className="mt-1 block text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                    {t.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-6 flex flex-wrap items-center gap-4">
+              {[
+                { key: "profiles", label: "Profiles", icon: Users, count: users.length },
+                { key: "messages", label: "Messages", icon: Mail, count: messages.length },
+                { key: "reviews", label: "Reviews", icon: Star, count: reviews.length },
+                { key: "logins", label: "Logins", icon: History, count: logins.length },
+                { key: "otps", label: "OTP Codes", icon: KeyRound, count: otps.length },
+              ].map((t) => (
+                <button
+                  key={t.key}
+                  data-testid={`tab-${t.key}`}
+                  onClick={() => setTab(t.key)}
+                  className={`inline-flex items-center gap-2 border px-5 py-3 text-xs font-bold uppercase tracking-[0.2em] transition-colors ${
+                    tab === t.key
+                      ? "border-primary bg-primary text-black"
+                      : "border-white/20 text-muted-foreground hover:border-white/40 hover:text-foreground"
+                  }`}
+                >
+                  <t.icon size={14} />
+                  {t.label}
+                  <span className={tab === t.key ? "text-black/70" : "text-muted-foreground"}>
+                    {t.count}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -1012,6 +1053,144 @@ const Profile = () => {
           </div>
         )}
 
+        {isAdmin && tab === "logins" && (
+          <div className="mt-10">
+            <div className="flex items-center gap-3">
+              <History size={16} className="text-primary" />
+              <span className="text-xs font-bold uppercase tracking-[0.3em]">Login Records</span>
+              <span className="h-px flex-1 bg-white/15" />
+              <span className="text-xs font-bold text-muted-foreground">{logins.length}</span>
+            </div>
+
+            <div className="mt-8 flex flex-col gap-4" data-testid="logins-inbox">
+              {loadingLogins ? (
+                <p className="text-sm font-light text-muted-foreground">Loading...</p>
+              ) : logins.length === 0 ? (
+                <p className="text-sm font-light text-muted-foreground">
+                  No login records yet. Sign-ins appear here in real time.
+                </p>
+              ) : (
+                logins.map((l) => (
+                  <div
+                    key={l.id}
+                    data-testid={`login-${l.id}`}
+                    className="border border-white/15 p-6 hover:border-primary transition-colors"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-9 w-9 shrink-0 rounded-full border border-white/20 flex items-center justify-center">
+                          <ShieldCheck size={14} className="text-secondary" />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="font-display font-bold uppercase tracking-tight truncate">
+                            {l.email}
+                          </span>
+                          <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                            <span>{l.ip_address || "unknown ip"}</span>
+                            {l.device && <span>{l.device}</span>}
+                          </div>
+                        </div>
+                      </div>
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {new Date(l.created_at).toLocaleString()}
+                      </span>
+                    </div>
+                    {l.user_agent && (
+                      <p className="mt-3 truncate font-mono text-[10px] text-muted-foreground/50">
+                        {l.user_agent}
+                      </p>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {isAdmin && tab === "otps" && (
+          <div className="mt-10">
+            <div className="flex items-center gap-3">
+              <KeyRound size={16} className="text-primary" />
+              <span className="text-xs font-bold uppercase tracking-[0.3em]">OTP Codes</span>
+              <span className="h-px flex-1 bg-white/15" />
+              <span className="text-xs font-bold text-muted-foreground">{otps.length}</span>
+            </div>
+
+            <div className="mt-8 flex flex-col gap-4" data-testid="otps-inbox">
+              {loadingOtps ? (
+                <p className="text-sm font-light text-muted-foreground">Loading...</p>
+              ) : otps.length === 0 ? (
+                <p className="text-sm font-light text-muted-foreground">
+                  No OTP records yet. Sign-up and password-reset codes appear here.
+                </p>
+              ) : (
+                otps.map((o) => {
+                  const expired = new Date(o.expires_at).getTime() < Date.now();
+                  return (
+                    <div
+                      key={o.id}
+                      data-testid={`otp-${o.id}`}
+                      className="border border-white/15 p-6 hover:border-primary transition-colors"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="h-9 w-9 shrink-0 rounded-full border border-white/20 flex items-center justify-center">
+                            <KeyRound size={14} className="text-secondary" />
+                          </div>
+                          <span className="font-display font-bold uppercase tracking-tight truncate">
+                            {o.email}
+                          </span>
+                          <span className="border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-secondary">
+                            {o.purpose}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          {o.used ? (
+                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+                              Used
+                            </span>
+                          ) : expired ? (
+                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-destructive">
+                              Expired
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-secondary">
+                              Active
+                            </span>
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(o.created_at).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-light text-muted-foreground">
+                        <span className="flex items-center gap-2">
+                          <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
+                            hash
+                          </span>
+                          <code className="font-mono text-[11px] text-foreground/70">{o.code_hash}</code>
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
+                            expires
+                          </span>
+                          {new Date(o.expires_at).toLocaleString()}
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
+                            attempts
+                          </span>
+                          {o.attempts}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+
         {isAdmin && tab === "profiles" && (
           <div className="mt-10">
             <div className="flex items-center gap-3">
@@ -1115,47 +1294,61 @@ const Profile = () => {
                       </div>
                     </div>
 
-                    <div className="border-t border-white/10 px-6 py-4 space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="w-14 shrink-0 text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
-                          ID
-                        </span>
-                        <code className="truncate font-mono text-[11px] text-foreground/70">
-                          {u.id}
-                        </code>
-                        <button
-                          data-testid={`copy-id-${u.id}`}
-                          onClick={() => copyToClipboard(u.id, "User ID")}
-                          aria-label="Copy user ID"
-                          className="ml-auto text-muted-foreground hover:text-primary transition-colors"
-                        >
-                          <Copy size={12} />
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="w-14 shrink-0 text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
-                          Hash
-                        </span>
-                        <code className="truncate font-mono text-[11px] text-foreground/70">
-                          {u.password_hash}
-                        </code>
-                        <button
-                          data-testid={`copy-hash-${u.id}`}
-                          onClick={() => copyToClipboard(u.password_hash, "Password hash")}
-                          aria-label="Copy password hash"
-                          className="ml-auto text-muted-foreground hover:text-primary transition-colors"
-                        >
-                          <Copy size={12} />
-                        </button>
-                      </div>
-                      <div className="flex gap-2 pt-1 text-xs font-light text-muted-foreground">
-                        <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
-                          logins
-                        </span>
-                        <span>
-                          {u.login_count} · last{" "}
-                          {u.last_login ? new Date(u.last_login).toLocaleString() : "never"}
-                        </span>
+                    <div className="border-t border-white/10 px-6 py-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <span className="w-14 shrink-0 text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
+                              ID
+                            </span>
+                            <code className="truncate font-mono text-[11px] text-foreground/70">
+                              {u.id}
+                            </code>
+                            <button
+                              data-testid={`copy-id-${u.id}`}
+                              onClick={() => copyToClipboard(u.id, "User ID")}
+                              aria-label="Copy user ID"
+                              className="ml-auto text-muted-foreground hover:text-primary transition-colors"
+                            >
+                              <Copy size={12} />
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="w-14 shrink-0 text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
+                              Hash
+                            </span>
+                            <code className="truncate font-mono text-[11px] text-foreground/70">
+                              {u.password_hash}
+                            </code>
+                            <button
+                              data-testid={`copy-hash-${u.id}`}
+                              onClick={() => copyToClipboard(u.password_hash, "Password hash")}
+                              aria-label="Copy password hash"
+                              className="ml-auto text-muted-foreground hover:text-primary transition-colors"
+                            >
+                              <Copy size={12} />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <span className="w-14 shrink-0 text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
+                              Joined
+                            </span>
+                            <span className="truncate text-xs font-light text-muted-foreground">
+                              {new Date(u.created_at).toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="w-14 shrink-0 text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
+                              Logins
+                            </span>
+                            <span className="truncate text-xs font-light text-muted-foreground">
+                              {u.login_count} · last{" "}
+                              {u.last_login ? new Date(u.last_login).toLocaleString() : "never"}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
