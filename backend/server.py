@@ -148,7 +148,8 @@ def create_access_token(user_id: str, email: str) -> str:
 
 def create_refresh_token(user_id: str) -> str:
     payload = {"sub": user_id,
-               "exp": datetime.now(timezone.utc) + timedelta(days=7), "type": "refresh"}
+               "exp": datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_DAYS),
+               "type": "refresh"}
     return jwt.encode(payload, get_jwt_secret(), algorithm=JWT_ALGORITHM)
 
 
@@ -156,7 +157,8 @@ def set_auth_cookies(response: Response, access: str, refresh: str):
     response.set_cookie("access_token", access, httponly=True, secure=not IS_DEV,
                         samesite="lax" if IS_DEV else "none", max_age=900, path="/")
     response.set_cookie("refresh_token", refresh, httponly=True, secure=not IS_DEV,
-                        samesite="lax" if IS_DEV else "none", max_age=604800, path="/")
+                        samesite="lax" if IS_DEV else "none",
+                        max_age=REFRESH_TOKEN_DAYS * 86400, path="/")
 
 
 def get_client_ip(request: Request) -> str | None:
@@ -245,6 +247,11 @@ OTP_RESEND_COOLDOWN_SECONDS = int(os.environ.get("OTP_RESEND_COOLDOWN_SECONDS", 
 # checking email. Enabled by default in dev, off in production (opt-in).
 OTP_LOG_CODES = os.environ.get("OTP_LOG_CODES", "1" if IS_DEV else "0").strip().lower() in (
     "1", "true", "yes")
+
+# How long a signed-in session survives without re-logging-in.
+# The refresh token cookie is set to this too, so users stay logged in
+# until they clear the app's data (e.g. uninstall). Default: ~10 years.
+REFRESH_TOKEN_DAYS = int(os.environ.get("REFRESH_TOKEN_DAYS", "3650"))
 
 
 def is_admin_email(email: str) -> bool:

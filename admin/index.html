@@ -216,7 +216,7 @@
     return "Something went wrong.";
   }
 
-  function req(method, path, body) {
+  function doReq(method, path, body) {
     return fetch(API + path, {
       method: method,
       credentials: "include",
@@ -227,6 +227,30 @@
         if (!r.ok) { var err = new Error(apiError(data || {})); err.status = r.status; err.data = data || {}; throw err; }
         return data;
       });
+    });
+  }
+
+  var refreshing = null;
+  function tryRefresh() {
+    if (refreshing) return refreshing;
+    refreshing = fetch(API + "/auth/refresh", {
+      method: "POST",
+      credentials: "include"
+    }).then(function (r) { return r.ok; })
+      .catch(function () { return false; })
+      .finally(function () { refreshing = null; });
+    return refreshing;
+  }
+
+  function req(method, path, body) {
+    return doReq(method, path, body).then(null, function (err) {
+      if (err.status === 401) {
+        return tryRefresh().then(function (ok) {
+          if (ok) return doReq(method, path, body);
+          throw err;
+        });
+      }
+      throw err;
     });
   }
 
@@ -287,10 +311,15 @@
     }
   }
 
+  function showLogin() {
+    $("app").classList.add("hidden");
+    $("loginScreen").classList.remove("hidden");
+  }
+
   function onLoadError(err) {
     if (err.status === 401 || err.status === 403) {
       toast("Session expired. Sign in again.", true);
-      location.reload();
+      showLogin();
     } else {
       toast(apiError(err), true);
     }
@@ -335,8 +364,24 @@
     render();
   };
   window._copy = function (text, label) {
-    navigator.clipboard.writeText(text).then(function () { toast(label + " copied."); })
-      .catch(function () { toast("Could not copy.", true); });
+    var done = function () { toast(label + " copied."); };
+    var fail = function () { toast("Could not copy.", true); };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(done).catch(fail);
+      return;
+    }
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      if (document.execCommand("copy")) done(); else fail();
+    } catch (e) {
+      fail();
+    }
+    document.body.removeChild(ta);
   };
 
   function esc(s) {
