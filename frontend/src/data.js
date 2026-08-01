@@ -48,7 +48,7 @@ export const PROJECTS = [
     description:
       "Weekly devlogs and coding tutorials — building projects in public and sharing everything I learn along the way.",
     gif:
-      "https://media.discordapp.net/attachments/1467399929361334396/1531975826751623189/Untitled_design.gif?ex=6a6d256b&is=6a6bd3eb&hm=851f89505d07c32086f363896cca1d14ccf79aa5139c933961dfdca4ebb656f0&=&width=688&height=386",
+      "/gif.gif",
   },
   {
     id: "p2",
@@ -59,7 +59,7 @@ export const PROJECTS = [
     description:
       "Gameplay, reviews and reaction content. Where the developer clocks out and the gamer clocks in.",
     gif:
-      "https://media.discordapp.net/attachments/1467399929361334396/1531975826751623189/Untitled_design.gif?ex=6a6d256b&is=6a6bd3eb&hm=851f89505d07c32086f363896cca1d14ccf79aa5139c933961dfdca4ebb656f0&=&width=688&height=386",
+      "/gif.gif",
   },
   {
     id: "p3",
@@ -70,7 +70,7 @@ export const PROJECTS = [
     description:
       "Reusable components, tools and experiments — all open-sourced for the community to build on top of.",
     gif:
-      "https://media.discordapp.net/attachments/1467399929361334396/1531975826751623189/Untitled_design.gif?ex=6a6d256b&is=6a6bd3eb&hm=851f89505d07c32086f363896cca1d14ccf79aa5139c933961dfdca4ebb656f0&=&width=688&height=386",
+      "/gif.gif",
   },
   {
     id: "p4",
@@ -81,6 +81,6 @@ export const PROJECTS = [
     description:
       "AMVs and anime edits — frame-perfect cuts synced to sound, crafted late into the night.",
     gif:
-      "https://media.discordapp.net/attachments/1467399929361334396/1531975826751623189/Untitled_design.gif?ex=6a6d256b&is=6a6bd3eb&hm=851f89505d07c32086f363896cca1d14ccf79aa5139c933961dfdca4ebb656f0&=&width=688&height=386",
+      "/gif.gif",
   },
 ];
