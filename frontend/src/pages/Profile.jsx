@@ -371,7 +371,7 @@ const Profile = () => {
       <div className="absolute inset-0 grid-bg opacity-25 pointer-events-none" />
 
       <div className="relative z-10 mx-auto max-w-[1400px] px-6 md:px-10 py-10">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <button
             data-testid="profile-home"
             onClick={() => navigate("/")}
@@ -443,11 +443,11 @@ const Profile = () => {
             </span>
             <h1
               data-testid="profile-name"
-              className="mt-4 font-display text-5xl md:text-7xl font-black uppercase tracking-tighter leading-none"
+              className="mt-4 font-display text-5xl md:text-7xl font-black uppercase tracking-tighter leading-none break-words"
             >
               {user.name}
             </h1>
-            <p data-testid="profile-email" className="mt-4 text-base font-light text-muted-foreground">
+            <p data-testid="profile-email" className="mt-4 text-base font-light text-muted-foreground break-words">
               {user.email} · <span className="text-primary uppercase">{user.role}</span>
             </p>
           </div>
@@ -959,7 +959,7 @@ const Profile = () => {
                     className="border border-white/15 p-6 hover:border-primary transition-colors"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-display font-bold uppercase tracking-tight">{m.name}</span>
+                      <span className="min-w-0 truncate font-display font-bold uppercase tracking-tight">{m.name}</span>
                       <div className="flex items-center gap-3">
                         <span className="text-xs text-muted-foreground">
                           {new Date(m.created_at).toLocaleDateString()}
@@ -976,7 +976,7 @@ const Profile = () => {
                     </div>
                     <a
                       href={`mailto:${m.email}`}
-                      className="mt-1 block text-xs text-secondary hover:text-primary transition-colors"
+                      className="mt-1 block truncate text-xs text-secondary hover:text-primary transition-colors"
                     >
                       {m.email}
                     </a>
@@ -1014,7 +1014,7 @@ const Profile = () => {
                     className="border border-white/15 p-6 hover:border-primary transition-colors"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-display font-bold uppercase tracking-tight">{r.name}</span>
+                      <span className="min-w-0 truncate font-display font-bold uppercase tracking-tight">{r.name}</span>
                       <div className="flex items-center gap-3">
                         <span className="flex items-center gap-0.5">
                           {[1, 2, 3, 4, 5].map((n) => (
@@ -1215,7 +1215,7 @@ const Profile = () => {
                     className="border border-white/15 hover:border-primary transition-colors"
                   >
                     <div className="flex items-start justify-between gap-4 p-6">
-                      <div className="flex items-center gap-4">
+                      <div className="flex min-w-0 items-center gap-4">
                         <div className="h-14 w-14 rounded-full border border-white/20 overflow-hidden bg-white/5 shrink-0">
                           {u.profile_image ? (
                             <img
@@ -1229,9 +1229,9 @@ const Profile = () => {
                             </div>
                           )}
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <div className="flex items-center gap-3">
-                            <span className="font-display font-bold uppercase tracking-tight">
+                            <span className="min-w-0 truncate font-display font-bold uppercase tracking-tight">
                               {u.name}
                             </span>
                             <span
@@ -1249,7 +1249,7 @@ const Profile = () => {
                           </div>
                           <a
                             href={`mailto:${u.email}`}
-                            className="mt-1 block text-xs text-secondary hover:text-primary transition-colors"
+                            className="mt-1 block truncate text-xs text-secondary hover:text-primary transition-colors"
                           >
                             {u.email}
                           </a>

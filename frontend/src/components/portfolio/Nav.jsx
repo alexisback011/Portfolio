@@ -75,14 +75,14 @@ export const Nav = () => {
             <Link
               to="/profile"
               data-testid="nav-account"
-              className="flex items-center gap-3 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors duration-200"
+              className="flex min-w-0 items-center gap-3 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors duration-200"
             >
               <img
                 src={avatarUrl(user)}
                 alt=""
-                className="h-7 w-7 rounded-full border border-white/20 object-cover"
+                className="h-7 w-7 shrink-0 rounded-full border border-white/20 object-cover"
               />
-              {user.name}
+              <span className="truncate">{user.name}</span>
             </Link>
           ) : (
             <Link

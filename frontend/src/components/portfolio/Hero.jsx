@@ -33,7 +33,7 @@ export const Hero = () => {
       id="top"
       ref={ref}
       data-testid="hero-section"
-      className="relative min-h-screen w-full overflow-hidden flex flex-col justify-end"
+      className="relative min-h-screen min-h-[100svh] w-full overflow-hidden flex flex-col justify-end"
     >
       {/* Parallax background */}
       <motion.div
@@ -70,7 +70,7 @@ export const Hero = () => {
         style={{ y: textY }}
         className="relative z-10 px-6 md:px-10 pb-16 md:pb-20 mx-auto max-w-[1600px] w-full"
       >
-        <h1 className="font-display font-black uppercase tracking-tighter leading-[0.82] text-[18vw] md:text-[13vw]">
+        <h1 className="font-display font-black uppercase tracking-tighter leading-[0.82] text-[clamp(2.5rem,12.5vw,7rem)] md:text-[clamp(5rem,13vw,13rem)]">
           <Line delay={0.2}>{PROFILE.roles[0]}</Line>
           <Line delay={0.35} className="text-stroke-primary">
             {PROFILE.roles[1]}
