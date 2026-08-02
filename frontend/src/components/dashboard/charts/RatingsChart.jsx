@@ -49,7 +49,7 @@ const RatingsChart = ({ reviews }) => {
             {data.map((d, i) => (
               <Cell
                 key={d.rating}
-                fill={d.count === 0 ? "hsl(0 0% 18%)" : i === 4 ? "#FF0059" : "hsl(0 0% 45%)"}
+                fill={d.count === 0 ? "hsl(0 84% 60%)" : i === 4 ? "#FF0059" : "hsl(0 0% 45%)"}
               />
             ))}
           </Bar>
