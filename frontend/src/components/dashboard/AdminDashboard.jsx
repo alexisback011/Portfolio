@@ -857,10 +857,6 @@ const AdminDashboard = ({ page, onNavigate }) => {
         ))}
       </div>
 
-      <div className="mt-6">
-        <AppDownloadCard />
-      </div>
-
       <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
         <Card>
           <CardHeader>
