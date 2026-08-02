@@ -4,7 +4,7 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-APK_VERSION = "1.0.3"
+APK_VERSION = "1.0.4"
 APK_FILE = ROOT_DIR / "AlexAdmin.apk"
 PANEL_FILE = ROOT_DIR / "index.html"
 
