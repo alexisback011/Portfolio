@@ -193,6 +193,7 @@
   .role.admin { color: var(--primary); border-color: rgba(255,0,89,.4); background: rgba(255,0,89,.08); }
   .role.user { color: var(--secondary); border-color: rgba(0,255,255,.35); background: rgba(0,255,255,.07); }
   .chip { font-size: 9px; letter-spacing: 2px; font-weight: 700; padding: 3px 7px; border: 1px solid rgba(248,113,113,.4); color: var(--danger); text-transform: uppercase; border-radius: 999px; background: rgba(248,113,113,.08); }
+  .chip-verified { border-color: rgba(52,211,153,.4); color: #34d399; background: rgba(52,211,153,.08); }
   .status { font-size: 9px; letter-spacing: 2px; font-weight: 700; text-transform: uppercase; }
   .status.used { color: var(--primary); }
   .status.expired { color: var(--danger); }
@@ -654,7 +655,7 @@
             "<div>" +
               '<div class="name">' + esc(u.name) + '</div>' +
               '<a class="meta link" href="mailto:' + esc(u.email) + '">' + esc(u.email) + "</a>" +
-              '<div><span class="role ' + esc(u.role) + '">' + esc(u.role) + "</span>" + (u.is_banned ? ' <span class="chip">Banned</span>' : "") + "</div>" +
+              '<div><span class="role ' + esc(u.role) + '">' + esc(u.role) + "</span>" + (u.is_banned ? ' <span class="chip">Banned</span>' : ' <span class="chip chip-verified">✓ Verified</span>') + "</div>" +
             "</div></div>" +
             '<div class="meta" style="text-align:right;">' + fmt(u.created_at) + "</div>" +
           "</div>" +
@@ -702,7 +703,7 @@
       html +=
         '<div class="card"><div class="card-head"><div class="who">' +
           '<div class="avatar">' + av + "</div>" +
-          '<div><div class="name">' + esc(r.name) + '</div><div class="stars">' + stars(r.rating) + "</div></div></div>" +
+          '<div><div class="name">' + esc(r.name) + (r.is_verified ? ' <span class="chip chip-verified">✓ Verified</span>' : "") + '</div><div class="stars">' + stars(r.rating) + "</div></div></div>" +
           '<div class="meta" style="text-align:right;">' + fmt(r.created_at) + "</div></div>" +
           '<div class="card-body"><p class="txt">' + esc(r.comment) + "</p>" +
           '<div class="actions"><button class="btn btn-danger btn-sm" onclick="_delReview(\'' + r.id + '\')">Delete</button></div></div></div>';

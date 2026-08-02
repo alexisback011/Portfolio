@@ -9,6 +9,7 @@ import {
   Trash2,
   Ban,
   ShieldCheck,
+  BadgeCheck,
   Copy,
   ChevronDown,
   Search,
@@ -247,7 +248,18 @@ const AdminDashboard = ({ page, onNavigate }) => {
                             </AvatarFallback>
                           </Avatar>
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-medium text-foreground">{u.name}</p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="truncate text-sm font-medium text-foreground">{u.name}</p>
+                              {!u.is_banned && (
+                                <Badge
+                                  variant="outline"
+                                  className="shrink-0 gap-1 px-1.5 py-0 text-[10px] text-primary"
+                                  data-testid={`verified-${u.id}`}
+                                >
+                                  <BadgeCheck className="h-3 w-3" /> Verified
+                                </Badge>
+                              )}
+                            </div>
                             <a
                               href={`mailto:${u.email}`}
                               className="block max-w-[200px] truncate text-xs text-muted-foreground hover:text-primary"
@@ -561,8 +573,13 @@ const AdminDashboard = ({ page, onNavigate }) => {
             reviews.map((r) => (
               <Card key={r.id} data-testid={`admin-review-${r.id}`} className="p-6">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="min-w-0 truncate font-display text-sm font-bold uppercase tracking-tight">
-                    {r.name}
+                  <span className="inline-flex min-w-0 items-center gap-1.5">
+                    <span className="min-w-0 truncate font-display text-sm font-bold uppercase tracking-tight">
+                      {r.name}
+                    </span>
+                    {r.is_verified && (
+                      <BadgeCheck className="h-4 w-4 shrink-0 text-primary" aria-label="Verified member" />
+                    )}
                   </span>
                   <div className="flex shrink-0 items-center gap-3">
                     <span className="flex items-center gap-0.5">
@@ -924,7 +941,17 @@ const AdminDashboard = ({ page, onNavigate }) => {
                           </AvatarFallback>
                         </Avatar>
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-medium">{u.name}</p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="truncate text-sm font-medium">{u.name}</p>
+                            {!u.is_banned && (
+                              <Badge
+                                variant="outline"
+                                className="shrink-0 gap-1 px-1.5 py-0 text-[10px] text-primary"
+                              >
+                                <BadgeCheck className="h-3 w-3" /> Verified
+                              </Badge>
+                            )}
+                          </div>
                           <p className="truncate text-xs text-muted-foreground">{u.email}</p>
                         </div>
                       </div>

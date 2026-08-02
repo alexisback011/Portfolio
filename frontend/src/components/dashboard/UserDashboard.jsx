@@ -498,7 +498,7 @@ const UserDashboard = ({ page, onNavigate }) => {
       >
         <Badge variant="secondary" className="gap-1.5">
           <BadgeCheck className="h-3.5 w-3.5 text-primary" />
-          {user.role === "admin" ? "Administrator" : "Member"}
+          {user.role === "admin" ? "Verified Administrator" : "Verified Member"}
         </Badge>
       </PageHeader>
 

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import Marquee from "react-fast-marquee";
-import { Star } from "lucide-react";
+import { Star, BadgeCheck } from "lucide-react";
 import { API } from "../../lib/api";
 
 const EASE = [0.85, 0, 0.15, 1];
@@ -147,8 +147,13 @@ export const Reviews = () => {
                         </div>
                       )}
                     </div>
-                    <span className="font-display font-bold uppercase tracking-tight text-sm">
-                      {r.name}
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="font-display font-bold uppercase tracking-tight text-sm">
+                        {r.name}
+                      </span>
+                      {r.is_verified && (
+                        <BadgeCheck size={14} className="text-primary" aria-label="Verified member" />
+                      )}
                     </span>
                   </div>
                 </div>

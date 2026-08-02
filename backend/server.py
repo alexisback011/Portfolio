@@ -738,6 +738,7 @@ class ReviewOut(BaseModel):
     rating: int
     comment: str
     created_at: datetime
+    is_verified: bool = False
 
 
 class LoginRecordOut(BaseModel):
@@ -1091,16 +1092,27 @@ async def create_review(input: ReviewCreate, current=Depends(get_current_user),
     await db.refresh(review)
     return {"id": review.id, "name": review.name, "rating": review.rating,
             "comment": review.comment, "created_at": review.created_at,
-            "profile_image": review.profile_image}
+            "profile_image": review.profile_image, "is_verified": True}
 
 
 @api_router.get("/review", response_model=List[ReviewOut])
 async def list_reviews(db: AsyncSession = Depends(get_db)):
     stmt = select(Review).order_by(Review.created_at.desc()).limit(200)
     rows = (await db.scalars(stmt)).all()
-    return [{"id": r.id, "name": r.name, "rating": r.rating,
-             "comment": r.comment, "created_at": r.created_at,
-             "profile_image": r.profile_image} for r in rows]
+    ids = {r.user_id for r in rows if r.user_id is not None}
+    banned = set()
+    if ids:
+        user_rows = (await db.execute(select(User.id, User.is_banned).where(User.id.in_(ids)))).all()
+        banned = {row[0] for row in user_rows if row[1]}
+    result = []
+    for r in rows:
+        result.append({
+            "id": r.id, "name": r.name, "rating": r.rating,
+            "comment": r.comment, "created_at": r.created_at,
+            "profile_image": r.profile_image,
+            "is_verified": r.user_id is not None and r.user_id not in banned,
+        })
+    return result
 
 
 @api_router.get("/review/me", response_model=List[ReviewOut])
@@ -1110,7 +1122,7 @@ async def my_reviews(current=Depends(get_current_user), db: AsyncSession = Depen
     rows = (await db.scalars(stmt)).all()
     return [{"id": r.id, "name": r.name, "rating": r.rating,
              "comment": r.comment, "created_at": r.created_at,
-             "profile_image": r.profile_image} for r in rows]
+             "profile_image": r.profile_image, "is_verified": True} for r in rows]
 
 
 @api_router.patch("/review/{review_id}", response_model=ReviewOut)
