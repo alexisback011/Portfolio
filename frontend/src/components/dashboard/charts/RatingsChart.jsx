@@ -41,7 +41,7 @@ const RatingsChart = ({ reviews }) => {
           />
           <Tooltip
             contentStyle={tooltipStyle}
-            itemStyle={{ color: "hsl(0 0% 98%)" }}
+            itemStyle={{ color: "hsl(0 84% 60%)" }}
             labelStyle={{ color: "hsl(0 0% 68%)", marginBottom: 4 }}
             formatter={(value, name, props) => [`${value} review${value === 1 ? "" : "s"}`, props.payload.rating]}
             cursor={{ fill: "hsl(0 0% 10%)" }}
