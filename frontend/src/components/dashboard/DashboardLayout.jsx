@@ -56,8 +56,8 @@ const buildAdminNav = () => [
     label: "Admin",
     items: [
       { key: "overview", label: "Overview", icon: LayoutDashboard },
-      { key: "manage", label: "Manage Profile", icon: Settings, testId: "user-tab-manage" },
-      { key: "profiles", label: "Registered Profiles", icon: Users, testId: "tab-profiles" },
+      { key: "manage", label: "Profile", icon: Settings, testId: "user-tab-manage" },
+      { key: "profiles", label: "Users", icon: Users, testId: "tab-profiles" },
       { key: "messages", label: "Messages", icon: Mail, testId: "tab-messages" },
       { key: "reviews", label: "Reviews", icon: Star, testId: "tab-reviews" },
       { key: "logins", label: "Logins", icon: History, testId: "tab-logins" },
@@ -108,7 +108,7 @@ const DashboardLayout = ({ user, isAdmin, page, onNavigate, hideReviews, childre
         <Icon
           className={cn("h-4 w-4 shrink-0", active ? "text-primary" : "text-muted-foreground")}
         />
-        <span className="min-w-0 flex-1 truncate text-left">{item.label}</span>
+        <span className="w-24 min-w-0 truncate text-left">{item.label}</span>
       </button>
     );
   };
