@@ -542,15 +542,11 @@ const UserDashboard = ({ page, onNavigate }) => {
             </p>
             <h2
               data-testid="profile-name"
-              className="mt-2 break-words font-display text-2xl font-bold tracking-tight md:text-3xl"
+              className="mt-2 inline-flex items-center gap-2 break-words font-display text-2xl font-bold tracking-tight md:text-3xl"
             >
               {user.name}
+              <BadgeCheck className="h-5 w-5 shrink-0 text-destructive" aria-label="Verified member" />
             </h2>
-            <div className="mt-2.5">
-              <Badge variant="destructive" className="gap-1">
-                <BadgeCheck className="h-3.5 w-3.5" /> Verified
-              </Badge>
-            </div>
             <p data-testid="profile-email" className="mt-2 break-words text-sm text-muted-foreground">
               {user.email}
             </p>
