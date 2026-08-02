@@ -33,13 +33,18 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 
-const buildNav = (hideReviews) => {
-  const items = [
-    { key: "overview", label: "Overview", icon: LayoutDashboard },
-    { key: "manage", label: "Manage Profile", icon: Settings, testId: "user-tab-manage" },
-    { key: "review", label: "Submit Review", icon: Star, testId: "user-tab-review" },
-    { key: "my-reviews", label: "My Reviews", icon: PenLine, testId: "user-tab-my-reviews" },
-  ];
+const buildNav = (isAdmin, hideReviews) => {
+  const items = isAdmin
+    ? [
+        { key: "review", label: "Submit Review", icon: Star, testId: "user-tab-review" },
+        { key: "my-reviews", label: "My Reviews", icon: PenLine, testId: "user-tab-my-reviews" },
+      ]
+    : [
+        { key: "overview", label: "Overview", icon: LayoutDashboard },
+        { key: "manage", label: "Manage Profile", icon: Settings, testId: "user-tab-manage" },
+        { key: "review", label: "Submit Review", icon: Star, testId: "user-tab-review" },
+        { key: "my-reviews", label: "My Reviews", icon: PenLine, testId: "user-tab-my-reviews" },
+      ];
   if (hideReviews) {
     return items.filter((i) => i.key !== "review" && i.key !== "my-reviews");
   }
@@ -51,6 +56,7 @@ const buildAdminNav = () => [
     label: "Admin",
     items: [
       { key: "overview", label: "Overview", icon: LayoutDashboard },
+      { key: "manage", label: "Manage Profile", icon: Settings, testId: "user-tab-manage" },
       { key: "profiles", label: "Registered Profiles", icon: Users, testId: "tab-profiles" },
       { key: "messages", label: "Messages", icon: Mail, testId: "tab-messages" },
       { key: "reviews", label: "Reviews", icon: Star, testId: "tab-reviews" },
@@ -71,9 +77,14 @@ const DashboardLayout = ({ user, isAdmin, page, onNavigate, hideReviews, childre
     navigate("/");
   };
 
-  const groups = isAdmin
-    ? [{ label: "Admin", items: buildAdminNav()[0].items }, { label: "Account", items: buildNav(hideReviews) }]
-    : [{ label: "Account", items: buildNav(hideReviews) }];
+  const groups = (
+    isAdmin
+      ? [
+          { label: "Admin", items: buildAdminNav()[0].items },
+          { label: "Account", items: buildNav(true, hideReviews) },
+        ]
+      : [{ label: "Account", items: buildNav(false, hideReviews) }]
+  ).filter((g) => g.items.length > 0);
 
   const NavItem = ({ item, onSelect }) => {
     const Icon = item.icon;
