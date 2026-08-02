@@ -533,6 +533,20 @@
       render(); toast("Review deleted.");
     }).catch(function (e) { toast(apiError(e), true); });
   };
+  window._delLogin = function (id) {
+    if (!confirm("Delete this login record permanently?")) return;
+    req("DELETE", "/admin/logins/" + id).then(function () {
+      state.logins = state.logins.filter(function (x) { return x.id !== id; });
+      render(); toast("Login record deleted.");
+    }).catch(function (e) { toast(apiError(e), true); });
+  };
+  window._delOtp = function (id) {
+    if (!confirm("Delete this OTP record permanently?")) return;
+    req("DELETE", "/admin/otps/" + id).then(function () {
+      state.otps = state.otps.filter(function (x) { return x.id !== id; });
+      render(); toast("OTP record deleted.");
+    }).catch(function (e) { toast(apiError(e), true); });
+  };
   window._toggleLogins = function (id) {
     state.expanded[id] = !state.expanded[id];
     render();
@@ -710,7 +724,10 @@
             '<div class="name">' + esc(l.email) + "</div>" +
             '<div class="meta">' + esc(l.ip_address || "unknown ip") + (l.device ? " \u00b7 " + esc(l.device) : "") + "</div>" +
           "</div></div>" +
-          '<div class="meta" style="text-align:right;">' + fmt(l.created_at) + "</div>" +
+          "<div style=\"text-align:right;\">" +
+            '<div class="meta">' + fmt(l.created_at) + "</div>" +
+            '<button class="btn btn-danger btn-sm" onclick="_delLogin(' + l.id + ')">Delete</button>' +
+          "</div>" +
         "</div>" +
         (l.user_agent
           ? '<div class="subrow"><span>Device</span><span class="grow"><code class="mono">' + esc(l.user_agent) + "</code></span></div>"
@@ -739,7 +756,10 @@
             '<div class="name">' + esc(o.email) + "</div>" +
             '<div><span class="purpose">' + esc(o.purpose) + "</span> \u00b7 " + status + "</div>" +
           "</div></div>" +
-          '<div class="meta" style="text-align:right;">' + fmt(o.created_at) + "</div>" +
+          "<div style=\"text-align:right;\">" +
+            '<div class="meta">' + fmt(o.created_at) + "</div>" +
+            '<button class="btn btn-danger btn-sm" onclick="_delOtp(' + o.id + ')">Delete</button>' +
+          "</div>" +
         "</div>" +
         '<div class="subrow"><span>Hash</span><span class="grow"><code class="mono">' + esc(o.code_hash) + "</code></span>" +
           '<button class="btn btn-ghost btn-sm" onclick="_copy(\'' + esc(o.code_hash).replace(/'/g, "\\'") + '\',\'OTP Hash\')">Copy</button></div>' +

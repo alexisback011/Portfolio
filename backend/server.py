@@ -1239,6 +1239,26 @@ async def list_otps(admin=Depends(require_admin), db: AsyncSession = Depends(get
              "created_at": r.created_at} for r in rows]
 
 
+@api_router.delete("/admin/logins/{login_id}")
+async def delete_login(login_id: int, admin=Depends(require_admin), db: AsyncSession = Depends(get_db)):
+    rec = await db.get(LoginRecord, login_id)
+    if not rec:
+        raise HTTPException(status_code=404, detail="Login record not found")
+    await db.delete(rec)
+    await db.commit()
+    return {"message": "Login record deleted"}
+
+
+@api_router.delete("/admin/otps/{otp_id}")
+async def delete_otp(otp_id: int, admin=Depends(require_admin), db: AsyncSession = Depends(get_db)):
+    rec = await db.get(OtpRecord, otp_id)
+    if not rec:
+        raise HTTPException(status_code=404, detail="OTP record not found")
+    await db.delete(rec)
+    await db.commit()
+    return {"message": "OTP record deleted"}
+
+
 @api_router.get("/apk/version")
 async def apk_version(request: Request):
     base = str(request.base_url).rstrip("/")
