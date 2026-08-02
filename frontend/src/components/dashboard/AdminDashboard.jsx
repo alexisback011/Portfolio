@@ -11,7 +11,6 @@ import {
   ShieldCheck,
   Copy,
   ChevronDown,
-  Download,
   Search,
   Hash,
   Fingerprint,
@@ -41,6 +40,7 @@ import EmptyState from "./EmptyState";
 import ConfirmDialog from "./ConfirmDialog";
 import SignupsChart from "./charts/SignupsChart";
 import RatingsChart from "./charts/RatingsChart";
+import AppDownloadCard from "./AppDownloadCard";
 
 const fmtDate = (v) => (v ? new Date(v).toLocaleDateString() : "—");
 const fmtDateTime = (v) => (v ? new Date(v).toLocaleString() : "—");
@@ -817,6 +817,21 @@ const AdminDashboard = ({ page, onNavigate }) => {
     );
   }
 
+  if (page === "app") {
+    return (
+      <div className="mx-auto w-full">
+        <PageHeader
+          eyebrow="App"
+          title="Android App"
+          description="Download the Alexシ Android app to manage the portfolio from your phone."
+        />
+        <div className="mt-8 max-w-2xl">
+          <AppDownloadCard />
+        </div>
+      </div>
+    );
+  }
+
   const recentUsers = [...users]
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
     .slice(0, 5);
@@ -842,28 +857,9 @@ const AdminDashboard = ({ page, onNavigate }) => {
         ))}
       </div>
 
-      <Card className="mt-6" data-testid="apk-download-section">
-        <CardContent className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-              <Download className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-wider">
-                𝙰𝚕𝚎𝚡シ <span className="text-muted-foreground">· Android app</span>
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Get the Android app to manage the portfolio on the go.
-              </p>
-            </div>
-          </div>
-          <Button asChild className="shrink-0 gap-2" data-testid="apk-download-btn">
-            <a href="/AlexAdmin.apk" download>
-              <Download className="h-4 w-4" /> Download AlexAdmin.apk
-            </a>
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="mt-6">
+        <AppDownloadCard />
+      </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
         <Card>
