@@ -21,3 +21,15 @@ __pycache__/
 # misc
 .DS_Store
 *.log
+
+# Gradle / Android build output
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/keystore.properties
+android/captures/
+.externalNativeBuild/
+.cxx/
+*.iml
+.idea/

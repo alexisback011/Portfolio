@@ -179,6 +179,27 @@ code {
     display: block;
 }
 
+/* Dashboard scope: calm modern-minimal overrides so the public site's
+   flat neon tokens (radius 0, violet accent) stay untouched. Applied to the
+   dashboard wrapper and any portal surface (dialogs, sheets, menus). */
+.dashboard,
+.dashboard-surface {
+    --radius: 10px;
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 98%;
+    --secondary: 0 0% 24%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 13%;
+    --muted-foreground: 0 0% 68%;
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 98%;
+    --border: 0 0% 17%;
+    --input: 0 0% 18%;
+    --ring: 339 100% 50%;
+}
+
 @media (prefers-reduced-motion: reduce) {
     * {
         animation-duration: 0.001ms !important;
