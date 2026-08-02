@@ -57,8 +57,10 @@ const AdminDashboard = ({ page, onNavigate }) => {
     setReviews,
     loadingReviews,
     logins,
+    setLogins,
     loadingLogins,
     otps,
+    setOtps,
     loadingOtps,
   } = useAdminData(true);
 
@@ -137,6 +139,26 @@ const AdminDashboard = ({ page, onNavigate }) => {
       toast.success("Review deleted.");
     } catch {
       toast.error("Could not delete review.");
+    }
+  };
+
+  const onDeleteLogin = async (id) => {
+    try {
+      await axios.delete(`${API}/admin/logins/${id}`, { withCredentials: true });
+      setLogins((prev) => prev.filter((l) => l.id !== id));
+      toast.success("Login record deleted.");
+    } catch (err) {
+      toast.error(formatApiErrorDetail(err.response?.data?.detail) || "Could not delete login record.");
+    }
+  };
+
+  const onDeleteOtp = async (id) => {
+    try {
+      await axios.delete(`${API}/admin/otps/${id}`, { withCredentials: true });
+      setOtps((prev) => prev.filter((o) => o.id !== id));
+      toast.success("OTP record deleted.");
+    } catch (err) {
+      toast.error(formatApiErrorDetail(err.response?.data?.detail) || "Could not delete OTP record.");
     }
   };
 
@@ -625,6 +647,7 @@ const AdminDashboard = ({ page, onNavigate }) => {
                   <TableHead className="hidden md:table-cell">IP / Device</TableHead>
                   <TableHead className="hidden xl:table-cell">User agent</TableHead>
                   <TableHead className="text-right">Time</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -647,6 +670,25 @@ const AdminDashboard = ({ page, onNavigate }) => {
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-right text-xs text-muted-foreground">
                       {fmtDateTime(l.created_at)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <ConfirmDialog
+                        title="Delete login record"
+                        description={`Delete the login record for ${l.email} from ${fmtDateTime(l.created_at)}? This cannot be undone.`}
+                        confirmLabel="Delete"
+                        destructive
+                        onConfirm={() => onDeleteLogin(l.id)}
+                      >
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          data-testid={`delete-login-${l.id}`}
+                          aria-label={`Delete login record for ${l.email}`}
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </ConfirmDialog>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -697,6 +739,7 @@ const AdminDashboard = ({ page, onNavigate }) => {
                   <TableHead className="hidden lg:table-cell">Hash</TableHead>
                   <TableHead className="hidden lg:table-cell">Attempts</TableHead>
                   <TableHead className="text-right">Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -743,6 +786,25 @@ const AdminDashboard = ({ page, onNavigate }) => {
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-right text-xs text-muted-foreground">
                         {fmtDateTime(o.created_at)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <ConfirmDialog
+                          title="Delete OTP record"
+                          description={`Delete the ${o.purpose} code for ${o.email} created ${fmtDateTime(o.created_at)}? This cannot be undone.`}
+                          confirmLabel="Delete"
+                          destructive
+                          onConfirm={() => onDeleteOtp(o.id)}
+                        >
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            data-testid={`delete-otp-${o.id}`}
+                            aria-label={`Delete OTP record for ${o.email}`}
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </ConfirmDialog>
                       </TableCell>
                     </TableRow>
                   );
