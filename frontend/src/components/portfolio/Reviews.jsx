@@ -242,14 +242,14 @@ export const Reviews = () => {
                         {r.rank <= 3 && (
                           <Crown
                             size={12}
-                            strokeWidth={2}
+                            strokeWidth={1.5}
                             aria-label={`Rank ${r.rank} crown`}
-                            className={`absolute -top-1 -left-1.5 drop-shadow ${
+                            className={`absolute -top-1 -left-1.5 -rotate-[8deg] drop-shadow ${
                               r.rank === 1
-                                ? "fill-[#FFD700] text-[#FFD700]"
+                                ? "fill-transparent text-[#FFD700]"
                                 : r.rank === 2
-                                  ? "fill-[#C0C0C0] text-[#C0C0C0]"
-                                  : "fill-[#CD7F32] text-[#CD7F32]"
+                                  ? "fill-transparent text-[#C0C0C0]"
+                                  : "fill-transparent text-[#CD7F32]"
                             }`}
                           />
                         )}
