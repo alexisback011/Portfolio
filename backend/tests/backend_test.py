@@ -642,11 +642,13 @@ class TestReviewLikes:
         assert r.json()["likes"] == 1
         assert r.json()["liked"] is True
         assert "rank" in r.json()
+        assert r.json()["likers"] == [{"name": "LIKE FAN", "profile_image": None}]
 
         # duplicate like is idempotent
         r = b.post(f"{BASE_URL}/api/review/{created['id']}/like")
         assert r.status_code == 200
         assert r.json()["likes"] == 1
+        assert len(r.json()["likers"]) == 1
 
         # public list reflects likes + liked for logged-in viewer
         r = b.get(f"{BASE_URL}/api/review")
@@ -654,6 +656,7 @@ class TestReviewLikes:
         assert item["likes"] == 1
         assert item["liked"] is True
         assert item["rank"] >= 1
+        assert item["likers"] == [{"name": "LIKE FAN", "profile_image": None}]
 
         # anonymous viewer sees count but liked false
         r = requests.get(f"{BASE_URL}/api/review")
@@ -667,11 +670,12 @@ class TestReviewLikes:
         assert mine["likes"] == 1
         assert mine["rank"] >= 1
 
-        # unlike -> count back to 0, liked false
+        # unlike -> count back to 0, liked false, likers cleared
         r = b.delete(f"{BASE_URL}/api/review/{created['id']}/like")
         assert r.status_code == 200, r.text
         assert r.json()["likes"] == 0
         assert r.json()["liked"] is False
+        assert r.json()["likers"] == []
 
         # liking a missing review -> 404
         r = b.post(f"{BASE_URL}/api/review/nope/like")
@@ -692,6 +696,36 @@ class TestReviewLikes:
         mine2 = next(x for x in me if x["id"] == r2["id"])
         assert mine1["likes"] == 1
         assert mine1["rank"] < mine2["rank"]
+
+    def test_likers_ordered_latest_first_and_capped(self):
+        maker = self._review_user()[0]
+        created = maker.post(f"{BASE_URL}/api/review",
+                             json={"rating": 5, "comment": "liker cap"}).json()
+        sessions = []
+        for i in range(7):
+            s = requests.Session()
+            r = s.post(f"{BASE_URL}/api/auth/register",
+                       json={"name": f"LIKER {i}",
+                             "email": f"lk{i}_{uuid.uuid4().hex[:6]}@test.dev",
+                             "password": "pass1234"})
+            assert r.status_code == 200
+            sessions.append(s)
+
+        for s in sessions:
+            assert s.post(f"{BASE_URL}/api/review/{created['id']}/like").status_code == 200
+
+        item = next(x for x in requests.get(f"{BASE_URL}/api/review").json()
+                    if x["id"] == created["id"])
+        assert item["likes"] == 7
+        assert [l["name"] for l in item["likers"]] == ["LIKER 6", "LIKER 5", "LIKER 4",
+                                                       "LIKER 3", "LIKER 2"]
+
+        sessions[6].delete(f"{BASE_URL}/api/review/{created['id']}/like")
+        item = next(x for x in requests.get(f"{BASE_URL}/api/review").json()
+                    if x["id"] == created["id"])
+        assert item["likes"] == 6
+        assert [l["name"] for l in item["likers"]] == ["LIKER 5", "LIKER 4", "LIKER 3",
+                                                       "LIKER 2", "LIKER 1"]
 class TestNsfwModeration:
     def test_request_otp_rejects_profane_name(self, client):
         email = f"nsfw_{uuid.uuid4().hex[:8]}@test.dev"
