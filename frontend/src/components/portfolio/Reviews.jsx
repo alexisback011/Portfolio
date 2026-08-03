@@ -202,7 +202,7 @@ export const Reviews = () => {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, ease: EASE, delay: 0.2 }}
-                className="flex flex-col gap-3 rounded-lg border border-white/15 bg-white/5 p-5"
+                className="flex flex-col gap-3 rounded-2xl border border-white/15 bg-white/5 p-5"
               >
                 <span className="text-xs font-bold uppercase tracking-[0.3em] text-secondary">
                   [ RANKING ]
