@@ -1,252 +1,147 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/mainRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:background="@color/bg">
 
     <LinearLayout
+        android:id="@+id/mainColumn"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingLeft="16dp"
-        android:paddingRight="12dp"
-        android:paddingTop="12dp"
-        android:paddingBottom="10dp">
-
-        <TextView
-            android:id="@+id/title"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Alex"
-            android:textColor="@color/fg"
-            android:textSize="14sp"
-            android:fontFamily="sans-serif-medium" />
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
         <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginRight="10dp"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:background="@drawable/chip_ok"
-            android:paddingLeft="9dp"
-            android:paddingRight="9dp"
-            android:paddingTop="5dp"
-            android:paddingBottom="5dp">
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp"
+            android:background="@color/bg">
 
-            <View
-                android:id="@+id/liveDot"
-                android:layout_width="6dp"
-                android:layout_height="6dp"
-                android:background="@color/ok" />
+            <ImageButton
+                android:id="@+id/menuBtn"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/ic_menu"
+                android:background="@drawable/nav_item_bg"
+                android:contentDescription="Open navigation"
+                android:scaleType="centerInside"
+                android:padding="10dp" />
+
+            <TextView
+                android:id="@+id/headerBrand"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="6dp"
+                android:text="ALEX"
+                android:textColor="@color/fg"
+                android:textSize="16sp"
+                android:fontFamily="@font/unbounded_900"
+                android:letterSpacing="-0.03" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="6dp"
-                android:text="LIVE"
-                android:textColor="@color/ok"
-                android:textSize="9sp"
+                android:text="."
+                android:textColor="@color/primary"
+                android:textSize="16sp"
+                android:fontFamily="@font/unbounded_900" />
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="22dp"
+                android:layout_marginLeft="12dp"
+                android:layout_marginRight="12dp"
+                android:background="@color/line" />
+
+            <TextView
+                android:id="@+id/headerCtx"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ADMIN CONSOLE"
+                android:textColor="@color/dim"
+                android:textSize="10sp"
                 android:textStyle="bold"
-                android:letterSpacing="0.14" />
+                android:letterSpacing="0.22" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/headerStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="10dp"
+                android:text="v1.0.8 ● ONLINE"
+                android:textColor="#66ADADAD"
+                android:textSize="9sp"
+                android:fontFamily="@font/jetbrains_mono_500"
+                android:maxLines="1" />
+
+            <TextView
+                android:id="@+id/headerAvatar"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:gravity="center"
+                android:textColor="@color/white"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:background="@drawable/avatar_circle" />
         </LinearLayout>
-
-        <Button
-            android:id="@+id/refreshBtn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="REFRESH"
-            android:textColor="@color/primary"
-            android:textSize="10sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.1"
-            android:background="@drawable/btn_ghost"
-            android:paddingLeft="11dp"
-            android:paddingRight="11dp"
-            android:paddingTop="7dp"
-            android:paddingBottom="7dp" />
-
-        <Button
-            android:id="@+id/logoutBtn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="8dp"
-            android:text="EXIT"
-            android:textColor="@color/danger"
-            android:textSize="10sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.1"
-            android:background="@drawable/btn_ghost"
-            android:paddingLeft="11dp"
-            android:paddingRight="11dp"
-            android:paddingTop="7dp"
-            android:paddingBottom="7dp" />
-    </LinearLayout>
-
-    <com.alex.admin.MarqueeView
-        android:id="@+id/marquee"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/card" />
-
-    <FrameLayout
-        android:id="@+id/tabBarWrap"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:paddingLeft="12dp"
-        android:paddingRight="12dp"
-        android:paddingBottom="10dp">
 
         <View
-            android:id="@+id/tabIndicator"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/tab_indicator"
-            android:visibility="gone" />
-
-        <LinearLayout
-            android:id="@+id/tabBar"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:layout_height="1dp"
+            android:background="@color/line" />
 
-            <Button
-                android:id="@+id/tabProfiles"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginRight="4dp"
-                android:text="PROFILES"
-                android:textColor="@color/tab_text"
-                android:textSize="9sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.04"
-                android:background="@android:color/transparent"
-                android:paddingTop="11dp"
-                android:paddingBottom="11dp" />
-
-            <Button
-                android:id="@+id/tabMessages"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginLeft="4dp"
-                android:layout_marginRight="4dp"
-                android:text="MSG"
-                android:textColor="@color/tab_text"
-                android:textSize="9sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.04"
-                android:background="@android:color/transparent"
-                android:paddingTop="11dp"
-                android:paddingBottom="11dp" />
-
-            <Button
-                android:id="@+id/tabReviews"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginLeft="4dp"
-                android:layout_marginRight="4dp"
-                android:text="REVIEWS"
-                android:textColor="@color/tab_text"
-                android:textSize="9sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.04"
-                android:background="@android:color/transparent"
-                android:paddingTop="11dp"
-                android:paddingBottom="11dp" />
-
-            <Button
-                android:id="@+id/tabLogins"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginLeft="4dp"
-                android:layout_marginRight="4dp"
-                android:text="LOGINS"
-                android:textColor="@color/tab_text"
-                android:textSize="9sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.04"
-                android:background="@android:color/transparent"
-                android:paddingTop="11dp"
-                android:paddingBottom="11dp" />
-
-            <Button
-                android:id="@+id/tabOtps"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginLeft="4dp"
-                android:text="OTP"
-                android:textColor="@color/tab_text"
-                android:textSize="9sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.04"
-                android:background="@android:color/transparent"
-                android:paddingTop="11dp"
-                android:paddingBottom="11dp" />
-        </LinearLayout>
-    </FrameLayout>
-
-    <TextView
-        android:id="@+id/tabSub"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingLeft="16dp"
-        android:paddingRight="16dp"
-        android:paddingBottom="10dp"
-        android:textColor="@color/dim"
-        android:textSize="10sp"
-        android:textStyle="bold"
-        android:letterSpacing="0.08"
-        android:text="Loading\u2026" />
-
-    <FrameLayout
-        android:id="@+id/content"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1">
-
-        <ScrollView
-            android:id="@+id/scroll"
+        <FrameLayout
+            android:id="@+id/content"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scrollbars="vertical"
-            android:fillViewport="true">
+            android:layout_height="0dp"
+            android:layout_weight="1">
 
-            <LinearLayout
-                android:id="@+id/list"
+            <ScrollView
+                android:id="@+id/scroll"
                 android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scrollbars="vertical"
+                android:fillViewport="true">
+
+                <LinearLayout
+                    android:id="@+id/list"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingLeft="16dp"
+                    android:paddingRight="16dp"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="24dp" />
+            </ScrollView>
+
+            <ProgressBar
+                android:id="@+id/loading"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingLeft="12dp"
-                android:paddingRight="12dp"
-                android:paddingTop="4dp"
-                android:paddingBottom="20dp" />
-        </ScrollView>
+                android:layout_gravity="center"
+                android:indeterminateTint="@color/primary" />
+        </FrameLayout>
+    </LinearLayout>
 
-        <ProgressBar
-            android:id="@+id/loading"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:indeterminateTint="@color/primary" />
+    <View
+        android:id="@+id/dimOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#66000000"
+        android:visibility="invisible" />
 
-        <TextView
-            android:id="@+id/empty"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="NO DATA."
-            android:textColor="@color/dim"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.15"
-            android:visibility="gone" />
-    </FrameLayout>
-</LinearLayout>
+    <include
+        layout="@layout/drawer"
+        android:id="@+id/drawerRoot"
+        android:layout_width="288dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="left" />
+</FrameLayout>

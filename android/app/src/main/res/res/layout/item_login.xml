@@ -13,14 +13,20 @@
         android:orientation="horizontal"
         android:gravity="center_vertical">
 
-        <TextView
-            android:id="@+id/lAvatar"
-            android:layout_width="42dp"
-            android:layout_height="42dp"
-            android:gravity="center"
-            android:textColor="@color/primary"
-            android:textSize="13sp"
-            android:textStyle="bold" />
+        <FrameLayout
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@drawable/circle_muted">
+
+            <ImageView
+                android:id="@+id/lIcon"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_shield_check"
+                android:tint="@color/secondary"
+                android:contentDescription="@null" />
+        </FrameLayout>
 
         <LinearLayout
             android:layout_width="0dp"
@@ -35,49 +41,50 @@
                 android:layout_height="wrap_content"
                 android:textColor="@color/fg"
                 android:textSize="14sp"
-                android:textStyle="bold" />
+                android:fontFamily="sans-serif-medium"
+                android:maxLines="1"
+                android:ellipsize="end" />
 
             <TextView
                 android:id="@+id/lMeta"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="3dp"
-                android:textColor="@color/muted"
-                android:textSize="11sp" />
+                android:textColor="@color/dim"
+                android:textSize="11sp"
+                android:maxLines="1"
+                android:ellipsize="end" />
         </LinearLayout>
 
         <TextView
             android:id="@+id/lDate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginLeft="8dp"
             android:textColor="@color/dim"
-            android:textSize="10sp" />
+            android:textSize="11sp" />
     </LinearLayout>
 
     <TextView
         android:id="@+id/lUa"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:textColor="@color/muted"
+        android:layout_marginTop="8dp"
+        android:textColor="#80ADADAD"
         android:textSize="10sp"
         android:typeface="monospace"
-        android:maxLines="2"
+        android:maxLines="1"
         android:ellipsize="end" />
 
-    <Button
+    <ImageButton
         android:id="@+id/lDel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:layout_gravity="end"
-        android:layout_marginTop="10dp"
-        android:text="DELETE"
-        android:textColor="@color/danger"
-        android:textSize="9sp"
-        android:textStyle="bold"
-        android:background="@drawable/btn_danger"
-        android:paddingLeft="12dp"
-        android:paddingRight="12dp"
-        android:paddingTop="7dp"
-        android:paddingBottom="7dp" />
+        android:layout_marginTop="8dp"
+        android:src="@drawable/ic_trash_2"
+        android:background="@drawable/btn_ghost"
+        android:contentDescription="Delete login record"
+        android:scaleType="centerInside"
+        android:padding="11dp" />
 </LinearLayout>

@@ -9,45 +9,26 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:orientation="vertical"
-        android:gravity="center_horizontal">
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <TextView
-                android:id="@+id/splashA"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="ALEX"
-                android:textColor="@color/fg"
-                android:textSize="52sp"
-                android:textStyle="bold"
-                android:fontFamily="sans-serif-condensed"
-                android:letterSpacing="0.5" />
-
-            <TextView
-                android:id="@+id/splashDot"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="."
-                android:textColor="@color/primary"
-                android:textSize="52sp"
-                android:textStyle="bold"
-                android:fontFamily="sans-serif-condensed" />
-        </LinearLayout>
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
 
         <TextView
+            android:id="@+id/splashA"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:text="ADMIN"
-            android:textColor="@color/dim"
-            android:textSize="10sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.3" />
+            android:text="ALEX"
+            android:textColor="@color/fg"
+            android:textSize="48sp"
+            android:fontFamily="@font/unbounded_900"
+            android:letterSpacing="0.5" />
+
+        <TextView
+            android:id="@+id/splashDot"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="."
+            android:textColor="@color/primary"
+            android:textSize="48sp"
+            android:fontFamily="@font/unbounded_900" />
     </LinearLayout>
 </FrameLayout>
