@@ -227,14 +227,6 @@ export const Reviews = () => {
                           {r.likes || 0}
                         </span>
                       </motion.button>
-                      {typeof r.rank === "number" && (
-                        <span
-                          className="inline-flex items-center rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-primary"
-                          data-testid={`rank-${r.id}`}
-                        >
-                          #{r.rank}
-                        </span>
-                      )}
                     </div>
                   </div>
                 </div>
