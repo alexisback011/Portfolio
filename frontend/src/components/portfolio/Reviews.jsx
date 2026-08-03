@@ -193,25 +193,27 @@ export const Reviews = () => {
                       aria-label={r.liked ? "Unlike this review" : "Like this review"}
                       className="relative inline-flex shrink-0 items-center gap-1.5 text-xs font-bold uppercase tracking-[0.2em] transition-colors hover:text-primary"
                     >
-                      <Heart
-                        size={14}
-                        className={r.liked ? "fill-primary text-primary" : "text-white/40 hover:text-primary"}
-                      />
-                      {r.liked && user && (
-                        <span className="absolute -top-0.5 -left-0.5 h-4 w-4 overflow-hidden rounded-full border border-white/40 bg-white/10 ring-2 ring-background">
-                          {user.profile_image ? (
-                            <img
-                              src={user.profile_image}
-                              alt={`${user.name} avatar`}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <span className="flex h-full w-full items-center justify-center text-[7px] font-black text-primary">
-                              {user.name?.[0]?.toUpperCase()}
-                            </span>
-                          )}
-                        </span>
-                      )}
+                      <span className="relative inline-flex">
+                        <Heart
+                          size={14}
+                          className={r.liked ? "fill-primary text-primary" : "text-white/40 hover:text-primary"}
+                        />
+                        {r.liked && user && (
+                          <span className="absolute -top-1 left-1/2 h-4 w-4 -translate-x-1/2 overflow-hidden rounded-full border border-white/40 bg-white/10 ring-2 ring-background">
+                            {user.profile_image ? (
+                              <img
+                                src={user.profile_image}
+                                alt={`${user.name} avatar`}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <span className="flex h-full w-full items-center justify-center text-[7px] font-black text-primary">
+                                {user.name?.[0]?.toUpperCase()}
+                              </span>
+                            )}
+                          </span>
+                        )}
+                      </span>
                       <span className={r.liked ? "text-primary" : "text-white/40"}>
                         {r.likes || 0}
                       </span>
