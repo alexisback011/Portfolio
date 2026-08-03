@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Toaster } from "sonner";
 import useLenis from "@/hooks/useLenis";
 import { Nav } from "@/components/portfolio/Nav";
+import CustomCursor from "@/components/CustomCursor";
 import { Hero } from "@/components/portfolio/Hero";
 import { Manifesto } from "@/components/portfolio/Manifesto";
 import { MarqueeStrip } from "@/components/portfolio/MarqueeStrip";
@@ -66,6 +67,7 @@ const HomePage = () => {
 function App() {
   return (
     <div className="App">
+      <CustomCursor />
       <Toaster
         theme="dark"
         position="bottom-right"
