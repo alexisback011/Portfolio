@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -9,6 +9,55 @@ import { useAuth } from "@/context/AuthContext";
 import { API } from "../../lib/api";
 
 const EASE = [0.85, 0, 0.15, 1];
+
+const BURST = [
+  { x: 0, y: -22, color: "bg-primary" },
+  { x: 16, y: -16, color: "bg-secondary" },
+  { x: 22, y: 0, color: "bg-primary" },
+  { x: 16, y: 16, color: "bg-secondary" },
+  { x: 0, y: 22, color: "bg-primary" },
+  { x: -16, y: 16, color: "bg-secondary" },
+  { x: -22, y: 0, color: "bg-primary" },
+  { x: -16, y: -16, color: "bg-secondary" },
+];
+
+const LikePop = ({ likes, children }) => {
+  const prev = useRef(null);
+  const [fire, setFire] = useState(false);
+
+  useEffect(() => {
+    if (prev.current !== null && likes > prev.current) {
+      setFire(true);
+      const t = setTimeout(() => setFire(false), 900);
+      prev.current = likes;
+      return () => clearTimeout(t);
+    }
+    prev.current = likes;
+  }, [likes]);
+
+  return (
+    <motion.span
+      className="relative inline-flex"
+      animate={fire ? { scale: [1, 1.45, 1] } : { scale: 1 }}
+      transition={{ duration: 0.45 }}
+    >
+      {children}
+      {fire && (
+        <span className="pointer-events-none absolute left-1/2 top-1/2">
+          {BURST.map((p, i) => (
+            <motion.span
+              key={i}
+              initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+              animate={{ x: p.x, y: p.y, opacity: 0, scale: 0.2 }}
+              transition={{ duration: 0.7, ease: "easeOut" }}
+              className={`absolute -ml-0.5 -mt-0.5 h-1 w-1 rounded-full ${p.color}`}
+            />
+          ))}
+        </span>
+      )}
+    </motion.span>
+  );
+};
 
 const Stars = ({ value, size = 14 }) => (
   <div className="flex items-center gap-0.5" aria-label={`${value} out of 5 stars`}>
@@ -193,7 +242,7 @@ export const Reviews = () => {
                       aria-label={r.liked ? "Unlike this review" : "Like this review"}
                       className="relative inline-flex shrink-0 items-center gap-1.5 text-xs font-bold uppercase tracking-[0.2em] transition-colors hover:text-primary"
                     >
-                      <span className="relative inline-flex">
+                      <LikePop likes={r.likes || 0}>
                         <Heart
                           size={14}
                           className={r.liked ? "fill-primary text-primary" : "text-white/40 hover:text-primary"}
@@ -213,7 +262,7 @@ export const Reviews = () => {
                             )}
                           </span>
                         )}
-                      </span>
+                      </LikePop>
                       <span className={r.liked ? "text-primary" : "text-white/40"}>
                         {r.likes || 0}
                       </span>
