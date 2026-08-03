@@ -240,18 +240,20 @@ export const Reviews = () => {
                           )}
                         </div>
                         {r.rank <= 3 && (
-                          <Crown
-                            size={12}
-                            strokeWidth={1.5}
+                          <motion.div
                             aria-label={`Rank ${r.rank} crown`}
-                            className={`absolute -top-1 -left-1.5 -rotate-[8deg] drop-shadow ${
+                            className={`absolute -top-1.5 -left-2 drop-shadow ${
                               r.rank === 1
-                                ? "fill-transparent text-[#FFD700]"
+                                ? "text-[#FFD700]"
                                 : r.rank === 2
-                                  ? "fill-transparent text-[#C0C0C0]"
-                                  : "fill-transparent text-[#CD7F32]"
+                                  ? "text-[#C0C0C0]"
+                                  : "text-[#CD7F32]"
                             }`}
-                          />
+                            animate={{ rotate: [-8, -2, -8], y: [0, -1.5, 0] }}
+                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                          >
+                            <Crown size={16} strokeWidth={1.5} className="fill-transparent" />
+                          </motion.div>
                         )}
                       </div>
                       <div className="flex min-w-0 flex-1 flex-col justify-center">
