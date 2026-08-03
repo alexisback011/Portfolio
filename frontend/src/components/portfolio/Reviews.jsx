@@ -3,7 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Marquee from "react-fast-marquee";
-import { Star, BadgeCheck, Heart } from "lucide-react";
+import { Star, BadgeCheck, Heart, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { API } from "../../lib/api";
@@ -225,17 +225,33 @@ export const Reviews = () => {
                       >
                         #{r.rank}
                       </span>
-                      <div className="h-6 w-6 shrink-0 overflow-hidden rounded-full border border-white/20 bg-white/5">
-                        {r.profile_image ? (
-                          <img
-                            src={r.profile_image}
-                            alt={`${r.name} avatar`}
-                            className="h-full w-full object-cover"
+                      <div className="relative h-6 w-6 shrink-0">
+                        <div className="h-6 w-6 overflow-hidden rounded-full border border-white/20 bg-white/5">
+                          {r.profile_image ? (
+                            <img
+                              src={r.profile_image}
+                              alt={`${r.name} avatar`}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-[9px] font-black text-primary">
+                              {r.name?.[0]?.toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                        {r.rank <= 3 && (
+                          <Crown
+                            size={12}
+                            strokeWidth={2}
+                            aria-label={`Rank ${r.rank} crown`}
+                            className={`absolute -top-1 -left-1.5 drop-shadow ${
+                              r.rank === 1
+                                ? "fill-[#FFD700] text-[#FFD700]"
+                                : r.rank === 2
+                                  ? "fill-[#C0C0C0] text-[#C0C0C0]"
+                                  : "fill-[#CD7F32] text-[#CD7F32]"
+                            }`}
                           />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-[9px] font-black text-primary">
-                            {r.name?.[0]?.toUpperCase()}
-                          </div>
                         )}
                       </div>
                       <div className="flex min-w-0 flex-1 flex-col justify-center">
