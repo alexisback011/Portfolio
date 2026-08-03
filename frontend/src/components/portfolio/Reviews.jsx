@@ -199,7 +199,7 @@ export const Reviews = () => {
                           className={r.liked ? "fill-primary text-primary" : "text-white/40 hover:text-primary"}
                         />
                         {r.liked && user && (
-                          <span className="absolute -top-1.5 -right-1 h-[15px] w-[15px] overflow-hidden rounded-full border border-white/40 bg-white/10 ring-2 ring-background">
+                          <span className="absolute -top-1.5 -right-1 h-[10px] w-[10px] overflow-hidden rounded-full border border-white/40 bg-white/10 ring-2 ring-background">
                             {user.profile_image ? (
                               <img
                                 src={user.profile_image}
@@ -207,7 +207,7 @@ export const Reviews = () => {
                                 className="h-full w-full object-cover"
                               />
                             ) : (
-                              <span className="flex h-full w-full items-center justify-center text-[6px] font-black text-primary">
+                              <span className="flex h-full w-full items-center justify-center text-[5px] font-black text-primary">
                                 {user.name?.[0]?.toUpperCase()}
                               </span>
                             )}
