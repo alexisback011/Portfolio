@@ -137,6 +137,11 @@ export const Reviews = () => {
     }
   };
 
+  const topReviews = [...reviews]
+    .filter((r) => typeof r.rank === "number")
+    .sort((a, b) => a.rank - b.rank)
+    .slice(0, 5);
+
   return (
     <section
       id="reviews"
@@ -152,7 +157,7 @@ export const Reviews = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
-          <div className="md:col-span-12">
+          <div className="md:col-span-8">
             <motion.h2
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -189,6 +194,49 @@ export const Reviews = () => {
               </motion.div>
             )}
           </div>
+
+          {reviews.length > 0 && (
+            <div className="md:col-span-4">
+              <motion.div
+                initial={{ opacity: 0, x: 24 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, ease: EASE, delay: 0.2 }}
+                className="flex flex-col gap-3 border border-white/15 bg-white/5 p-5"
+              >
+                <span className="text-xs font-bold uppercase tracking-[0.3em] text-secondary">
+                  [ RANKING ]
+                </span>
+                <div className="flex flex-col divide-y divide-white/10">
+                  {topReviews.map((r) => (
+                    <div key={r.id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                      <span
+                        className={`w-7 shrink-0 font-display font-black text-lg leading-none ${
+                          r.rank <= 3 ? "text-primary" : "text-muted-foreground"
+                        }`}
+                      >
+                        #{r.rank}
+                      </span>
+                      <div className="flex min-w-0 flex-1 flex-col gap-1">
+                        <span className="inline-flex min-w-0 items-center gap-1.5">
+                          <span className="truncate font-display font-bold uppercase tracking-tight text-sm">
+                            {r.name}
+                          </span>
+                          {r.is_verified && (
+                            <BadgeCheck size={12} className="shrink-0 text-primary" aria-label="Verified member" />
+                          )}
+                        </span>
+                        <Stars value={r.rating} size={10} />
+                      </div>
+                      <span className="inline-flex shrink-0 items-center gap-1 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                        <Heart size={12} className="fill-primary text-primary" /> {r.likes || 0}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            </div>
+          )}
         </div>
 
         <div className="mt-12" data-testid="reviews-list">
