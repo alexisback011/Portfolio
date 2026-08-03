@@ -250,7 +250,7 @@ export const Reviews = () => {
                                   : "text-[#F0A35E] [filter:drop-shadow(0_0_5px_rgba(240,163,94,0.85))]"
                             }`}
                             animate={{ rotate: [-8, -2, -8], y: [0, -1.5, 0] }}
-                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                           >
                             <Crown size={16} strokeWidth={1.5} className="fill-transparent" />
                           </motion.div>
