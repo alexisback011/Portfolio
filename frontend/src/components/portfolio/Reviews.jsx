@@ -242,12 +242,12 @@ export const Reviews = () => {
                         {r.rank <= 3 && (
                           <motion.div
                             aria-label={`Rank ${r.rank} crown`}
-                            className={`absolute -top-1.5 -left-2 drop-shadow ${
+                            className={`absolute -top-1.5 -left-2 ${
                               r.rank === 1
-                                ? "text-[#FFD700]"
+                                ? "text-[#FFE55C] [filter:drop-shadow(0_0_5px_rgba(255,229,92,0.9))]"
                                 : r.rank === 2
-                                  ? "text-[#C0C0C0]"
-                                  : "text-[#CD7F32]"
+                                  ? "text-[#EAEAEA] [filter:drop-shadow(0_0_5px_rgba(234,234,234,0.8))]"
+                                  : "text-[#F0A35E] [filter:drop-shadow(0_0_5px_rgba(240,163,94,0.85))]"
                             }`}
                             animate={{ rotate: [-8, -2, -8], y: [0, -1.5, 0] }}
                             transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
