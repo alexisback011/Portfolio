@@ -755,12 +755,6 @@ class ReviewCreate(BaseModel):
     comment: str = Field(..., min_length=1, max_length=1000)
 
 
-class LikerOut(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    name: str
-    profile_image: str | None = None
-
-
 class ReviewOut(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str
@@ -771,7 +765,6 @@ class ReviewOut(BaseModel):
     likes: int = 0
     rank: int | None = None
     liked: bool = False
-    likers: list[LikerOut] = []
     created_at: datetime
     is_verified: bool = False
 
@@ -872,30 +865,9 @@ async def _liked_ids(db: AsyncSession, viewer_id: int | None) -> set:
     return {row[0] for row in rows}
 
 
-MAX_LIKERS_SHOWN = 5
-
-
-async def _review_likers(db: AsyncSession, review_ids: list[str]) -> dict:
-    if not review_ids:
-        return {}
-    rows = (await db.execute(
-        select(ReviewLike.review_id, User.name, User.profile_image)
-        .join(User, User.id == ReviewLike.user_id)
-        .where(ReviewLike.review_id.in_(review_ids))
-        .order_by(ReviewLike.created_at.desc())
-    )).all()
-    result = {rid: [] for rid in review_ids}
-    for rid, name, profile_image in rows:
-        if len(result[rid]) < MAX_LIKERS_SHOWN:
-            result[rid].append({"name": name, "profile_image": profile_image})
-    return result
-
-
-async def _review_payload(r: Review, rank_map: dict, liked_ids: set, verified: bool,
-                          likers_map: dict | None = None) -> dict:
+async def _review_payload(r: Review, rank_map: dict, liked_ids: set, verified: bool) -> dict:
     return {"id": r.id, "name": r.name, "rating": r.rating, "comment": r.comment,
             "likes": r.likes or 0, "rank": rank_map.get(r.id), "liked": r.id in liked_ids,
-            "likers": (likers_map or {}).get(r.id, []),
             "created_at": r.created_at, "profile_image": r.profile_image, "is_verified": verified}
 
 
@@ -1183,8 +1155,7 @@ async def create_review(input: ReviewCreate, current=Depends(get_current_user),
     await db.commit()
     await db.refresh(review)
     rank_map = await _review_ranks(db)
-    likers_map = await _review_likers(db, [review.id])
-    return await _review_payload(review, rank_map, set(), True, likers_map)
+    return await _review_payload(review, rank_map, set(), True)
 
 
 @api_router.get("/review", response_model=List[ReviewOut])
@@ -1199,11 +1170,10 @@ async def list_reviews(current=Depends(optional_current_user), db: AsyncSession 
     viewer_id = current["id"] if current else None
     rank_map = await _review_ranks(db)
     liked_ids = await _liked_ids(db, int(viewer_id) if viewer_id else None)
-    likers_map = await _review_likers(db, [r.id for r in rows])
     result = []
     for r in rows:
         verified = r.user_id is not None and r.user_id not in banned
-        result.append(await _review_payload(r, rank_map, liked_ids, verified, likers_map))
+        result.append(await _review_payload(r, rank_map, liked_ids, verified))
     return result
 
 
@@ -1214,8 +1184,7 @@ async def my_reviews(current=Depends(get_current_user), db: AsyncSession = Depen
     rows = (await db.scalars(stmt)).all()
     rank_map = await _review_ranks(db)
     liked_ids = await _liked_ids(db, uid)
-    likers_map = await _review_likers(db, [r.id for r in rows])
-    return [await _review_payload(r, rank_map, liked_ids, True, likers_map) for r in rows]
+    return [await _review_payload(r, rank_map, liked_ids, True) for r in rows]
 
 
 @api_router.post("/review/{review_id}/like", response_model=ReviewOut)
@@ -1233,8 +1202,7 @@ async def like_review(review_id: str, current=Depends(get_current_user),
         await db.refresh(review)
     rank_map = await _review_ranks(db)
     liked_ids = await _liked_ids(db, uid)
-    likers_map = await _review_likers(db, [review.id])
-    return await _review_payload(review, rank_map, liked_ids, True, likers_map)
+    return await _review_payload(review, rank_map, liked_ids, True)
 
 
 @api_router.delete("/review/{review_id}/like", response_model=ReviewOut)
@@ -1252,8 +1220,7 @@ async def unlike_review(review_id: str, current=Depends(get_current_user),
         await db.refresh(review)
     rank_map = await _review_ranks(db)
     liked_ids = await _liked_ids(db, uid)
-    likers_map = await _review_likers(db, [review.id])
-    return await _review_payload(review, rank_map, liked_ids, True, likers_map)
+    return await _review_payload(review, rank_map, liked_ids, True)
 
 
 @api_router.patch("/review/{review_id}", response_model=ReviewOut)
@@ -1275,8 +1242,7 @@ async def update_review(review_id: str, input: ReviewCreate,
     await db.refresh(review)
     rank_map = await _review_ranks(db)
     liked_ids = await _liked_ids(db, user.id)
-    likers_map = await _review_likers(db, [review.id])
-    return await _review_payload(review, rank_map, liked_ids, True, likers_map)
+    return await _review_payload(review, rank_map, liked_ids, True)
 
 
 @api_router.delete("/review/{review_id}")

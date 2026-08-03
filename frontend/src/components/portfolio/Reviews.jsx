@@ -187,47 +187,20 @@ export const Reviews = () => {
                         )}
                       </span>
                     </div>
-                    <div className="flex shrink-0 items-center gap-2.5">
-                      {(r.likers || []).length > 0 && (
-                        <div className="flex -space-x-1.5" data-testid={`likers-${r.id}`}>
-                          {r.likers.slice(0, 4).map((l, i) => (
-                            <span
-                              key={i}
-                              className="relative h-5 w-5 overflow-hidden rounded-full border border-white/30 bg-white/10 ring-2 ring-background"
-                            >
-                              {l.profile_image ? (
-                                <img
-                                  src={l.profile_image}
-                                  alt={`${l.name} avatar`}
-                                  className="h-full w-full object-cover"
-                                />
-                              ) : (
-                                <span className="flex h-full w-full items-center justify-center text-[8px] font-black text-primary">
-                                  {l.name?.[0]?.toUpperCase()}
-                                </span>
-                              )}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      <motion.button
-                        type="button"
-                        onClick={() => toggleLike(r)}
-                        aria-label={r.liked ? "Unlike this review" : "Like this review"}
-                        whileTap={{ scale: 1.3 }}
-                        animate={r.liked ? { scale: [1, 1.35, 1] } : { scale: 1 }}
-                        transition={{ duration: 0.3 }}
-                        className="inline-flex shrink-0 items-center gap-1.5 text-xs font-bold uppercase tracking-[0.2em] transition-colors hover:text-primary"
-                      >
-                        <Heart
-                          size={16}
-                          className={r.liked ? "fill-primary text-primary" : "text-white/40 hover:text-primary"}
-                        />
-                        <span className={r.liked ? "text-primary" : "text-white/40"}>
-                          {r.likes || 0}
-                        </span>
-                      </motion.button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleLike(r)}
+                      aria-label={r.liked ? "Unlike this review" : "Like this review"}
+                      className="inline-flex shrink-0 items-center gap-1.5 text-xs font-bold uppercase tracking-[0.2em] transition-colors hover:text-primary"
+                    >
+                      <Heart
+                        size={14}
+                        className={r.liked ? "fill-primary text-primary" : "text-white/40 hover:text-primary"}
+                      />
+                      <span className={r.liked ? "text-primary" : "text-white/40"}>
+                        {r.likes || 0}
+                      </span>
+                    </button>
                   </div>
                 </div>
               ))}
