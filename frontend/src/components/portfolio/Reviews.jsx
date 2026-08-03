@@ -198,7 +198,7 @@ export const Reviews = () => {
                         className={r.liked ? "fill-primary text-primary" : "text-white/40 hover:text-primary"}
                       />
                       {r.liked && user && (
-                        <span className="absolute -top-1 -right-1.5 h-4 w-4 overflow-hidden rounded-full border border-white/40 bg-white/10 ring-2 ring-background">
+                        <span className="absolute -top-0.5 -left-0.5 h-4 w-4 overflow-hidden rounded-full border border-white/40 bg-white/10 ring-2 ring-background">
                           {user.profile_image ? (
                             <img
                               src={user.profile_image}
