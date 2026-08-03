@@ -620,6 +620,17 @@
     return '<span class="crown r' + rank + '" title="Rank ' + rank + '">' +
       '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.735H5.81a1 1 0 0 1-.957-.735L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/></svg></span>';
   }
+  function _bestRank(name) {
+    if (!name || !state.reviews) return null;
+    var k = String(name).toLowerCase();
+    var best = null;
+    state.reviews.forEach(function (r) {
+      if (r.rank && r.rank <= 3 && String(r.name || "").toLowerCase() === k) {
+        if (best === null || r.rank < best) best = r.rank;
+      }
+    });
+    return best;
+  }
 
   /* ---------- render ---------- */
   function render() {
@@ -686,7 +697,7 @@
           '<div class="card-head"><div class="who">' +
             '<div class="avatar">' + av + "</div>" +
             "<div>" +
-              '<div class="name">' + esc(u.name) + '</div>' +
+              '<div class="name">' + esc(u.name) + _crown(_bestRank(u.name)) + '</div>' +
               '<a class="meta link" href="mailto:' + esc(u.email) + '">' + esc(u.email) + "</a>" +
               '<div><span class="role ' + esc(u.role) + '">' + esc(u.role) + "</span>" + (u.is_banned ? ' <span class="chip">Banned</span>' : ' <span class="chip chip-verified">✓ Verified</span>') + "</div>" +
             "</div></div>" +

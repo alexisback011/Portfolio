@@ -70,6 +70,15 @@ const AdminDashboard = ({ page, onNavigate }) => {
   const [expandedUser, setExpandedUser] = useState({});
   const [search, setSearch] = useState("");
 
+  const crownByReviewer = {};
+  reviews.forEach((r) => {
+    if (r.rank && r.rank <= 3) {
+      const key = String(r.name || "").toLowerCase();
+      if (!(key in crownByReviewer) || r.rank < crownByReviewer[key]) crownByReviewer[key] = r.rank;
+    }
+  });
+  const reviewCrownFor = (u) => crownByReviewer[String(u?.name || "").toLowerCase()] || null;
+
   const copyToClipboard = async (text, label) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -252,6 +261,9 @@ const AdminDashboard = ({ page, onNavigate }) => {
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
                               <p className="truncate text-sm font-medium text-foreground">{u.name}</p>
+                              {reviewCrownFor(u) && (
+                                <ReviewCrown rank={reviewCrownFor(u)} size={14} className="shrink-0" />
+                              )}
                               {!u.is_banned && (
                                 <Badge
                                   variant="outline"
@@ -949,6 +961,9 @@ const AdminDashboard = ({ page, onNavigate }) => {
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
                             <p className="truncate text-sm font-medium">{u.name}</p>
+                            {reviewCrownFor(u) && (
+                              <ReviewCrown rank={reviewCrownFor(u)} size={14} className="shrink-0" />
+                            )}
                             {!u.is_banned && (
                               <Badge
                                 variant="outline"
