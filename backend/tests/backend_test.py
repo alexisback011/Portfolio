@@ -803,3 +803,18 @@ class TestOtpCustomization:
         assert "smtp" in _provider_chain()
         assert EMAIL_PROVIDER  # non-empty in any config
         assert EMAIL_SENDER_NAME  # display name configured
+
+
+# ---------- Spotify now playing ----------
+class TestSpotifyNowPlaying:
+    def test_endpoint_shape(self, client):
+        # Deterministic: never touches live Spotify. When credentials are
+        # absent (tests) it returns configured:false; otherwise it must still
+        # be a well-formed payload.
+        r = client.get(f"{BASE_URL}/api/spotify/now-playing")
+        assert r.status_code == 200
+        data = r.json()
+        assert "configured" in data
+        assert data["configured"] in (True, False)
+        if data["configured"]:
+            assert "playing" in data

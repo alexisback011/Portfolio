@@ -11,6 +11,8 @@ PANEL_FILE = ROOT_DIR / "index.html"
 import os
 import base64
 import asyncio
+import json
+import time
 import logging
 import threading
 import uuid
@@ -25,6 +27,7 @@ from typing import AsyncIterator, List
 
 import bcrypt
 import jwt
+import requests
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends
 from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
@@ -277,6 +280,16 @@ OTP_LOG_CODES = os.environ.get("OTP_LOG_CODES", "1" if IS_DEV else "0").strip().
 # The refresh token cookie is set to this too, so users stay logged in
 # until they clear the app's data (e.g. uninstall). Default: ~10 years.
 REFRESH_TOKEN_DAYS = int(os.environ.get("REFRESH_TOKEN_DAYS", "3650"))
+
+
+# ---- Spotify "now playing" ----
+# Setup: see scripts/get_spotify_token.py + RUN.md. Refresh token is minted
+# once via OAuth and stored server-side; access tokens are refreshed on demand.
+SPOTIFY_CLIENT_ID = os.environ.get("SPOTIFY_CLIENT_ID", "").strip()
+SPOTIFY_CLIENT_SECRET = os.environ.get("SPOTIFY_CLIENT_SECRET", "").strip()
+SPOTIFY_REFRESH_TOKEN = os.environ.get("SPOTIFY_REFRESH_TOKEN", "").strip()
+SPOTIFY_ACCESS_TOKEN = {"token": "", "expires_at": 0.0}
+_spotify_lock = threading.Lock()
 
 
 def is_admin_email(email: str) -> bool:
@@ -1391,6 +1404,112 @@ async def admin_app():
     if not PANEL_FILE.exists():
         raise HTTPException(status_code=404, detail="Admin panel not available")
     return HTMLResponse(PANEL_FILE.read_text(encoding="utf-8"))
+
+
+# ---------- Spotify "now playing" ----------
+_SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token"
+_SPOTIFY_NOW_URL = "https://api.spotify.com/v1/me/player/currently-playing"
+_SPOTIFY_RECENT_URL = "https://api.spotify.com/v1/me/player/recently-played"
+
+
+def _spotify_configured() -> bool:
+    return bool(SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET and SPOTIFY_REFRESH_TOKEN)
+
+
+def _spotify_access_token() -> str:
+    now = time.time()
+    with _spotify_lock:
+        if SPOTIFY_ACCESS_TOKEN["token"] and SPOTIFY_ACCESS_TOKEN["expires_at"] > now + 30:
+            return SPOTIFY_ACCESS_TOKEN["token"]
+        basic = base64.b64encode(
+            f"{SPOTIFY_CLIENT_ID}:{SPOTIFY_CLIENT_SECRET}".encode()).decode()
+        resp = requests.post(
+            _SPOTIFY_TOKEN_URL,
+            data={
+                "grant_type": "refresh_token",
+                "refresh_token": SPOTIFY_REFRESH_TOKEN,
+            },
+            headers={
+                "Authorization": f"Basic {basic}",
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            timeout=10,
+        )
+        resp.raise_for_status()
+        payload = resp.json()
+        token = payload["access_token"]
+        expires_in = int(payload.get("expires_in", 3600))
+        SPOTIFY_ACCESS_TOKEN["token"] = token
+        SPOTIFY_ACCESS_TOKEN["expires_at"] = time.time() + expires_in
+        return token
+
+
+def _spotify_track_item(payload: dict) -> dict | None:
+    item = payload.get("item") or {}
+    if not item:
+        return None
+    images = item.get("album", {}).get("images") or []
+    return {
+        "playing": bool(payload.get("is_playing")),
+        "title": item.get("name", ""),
+        "artist": ", ".join(a.get("name", "") for a in item.get("artists", [])),
+        "album": (item.get("album", {}) or {}).get("name", ""),
+        "cover": images[0].get("url", "") if images else "",
+        "url": (item.get("external_urls", {}) or {}).get("spotify", ""),
+        "progress_ms": int(payload.get("progress_ms") or 0),
+        "duration_ms": int(item.get("duration_ms") or 0),
+    }
+
+
+def _spotify_now_playing() -> dict:
+    if not _spotify_configured():
+        return {"configured": False}
+    try:
+        token = _spotify_access_token()
+        headers = {"Authorization": f"Bearer {token}"}
+
+        resp = requests.get(_SPOTIFY_NOW_URL, headers=headers, timeout=10)
+        if resp.status_code == 200:
+            track = _spotify_track_item(resp.json())
+            return {
+                "configured": True,
+                "from_recently_played": False,
+                **(track or {"playing": False}),
+            }
+        if resp.status_code == 204:
+            recent = requests.get(
+                _SPOTIFY_RECENT_URL,
+                headers=headers,
+                params={"limit": 1},
+                timeout=10,
+            )
+            if recent.status_code == 200:
+                items = recent.json().get("items") or []
+                if items:
+                    payload = items[0]
+                    played_at = payload.get("played_at", "")
+                    track = _spotify_track_item({
+                        "is_playing": False,
+                        "item": payload.get("track", {}),
+                        "progress_ms": 0,
+                    })
+                    return {
+                        "configured": True,
+                        "from_recently_played": True,
+                        "played_at": played_at,
+                        **(track or {"playing": False}),
+                    }
+            return {"configured": True, "from_recently_played": True, "playing": False}
+        return {"configured": True, "playing": False}
+    except Exception:
+        return {"configured": False}
+
+
+@api_router.get("/spotify/now-playing")
+def spotify_now_playing():
+    payload = _spotify_now_playing()
+    return Response(content=json.dumps(payload), media_type="application/json",
+                    headers={"Cache-Control": "no-store"})
 
 
 app.include_router(api_router)

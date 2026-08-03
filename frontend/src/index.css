@@ -211,6 +211,62 @@ code {
     transition: background-color 0.2s ease;
 }
 
+/* Music equalizer wave */
+.eq {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 14px;
+}
+.eq i {
+    width: 3px;
+    height: 100%;
+    border-radius: 2px;
+    transform-origin: bottom;
+    background: hsl(var(--secondary));
+    box-shadow: 0 0 6px hsl(var(--secondary) / 0.6);
+}
+.eq i:nth-child(2),
+.eq i:nth-child(4) {
+    background: hsl(var(--primary));
+    box-shadow: 0 0 6px hsl(var(--primary) / 0.6);
+}
+.eq-playing i {
+    animation: eqBounce 0.9s ease-in-out infinite;
+}
+.eq-playing i:nth-child(2) {
+    animation-delay: 0.15s;
+    animation-duration: 0.75s;
+}
+.eq-playing i:nth-child(3) {
+    animation-delay: 0.3s;
+    animation-duration: 1.05s;
+}
+.eq-playing i:nth-child(4) {
+    animation-delay: 0.45s;
+    animation-duration: 0.85s;
+}
+.eq-idle i {
+    animation: none;
+    height: 35%;
+}
+.eq-idle i:nth-child(2),
+.eq-idle i:nth-child(4) {
+    height: 60%;
+}
+@keyframes eqBounce {
+    0%, 100% { transform: scaleY(0.25); }
+    50% { transform: scaleY(1); }
+}
+
+/* Slow spin for album art while playing */
+.album-spin {
+    animation: albumSpin 9s linear infinite;
+}
+@keyframes albumSpin {
+    to { transform: rotate(360deg); }
+}
+
 /* Dashboard scope: calm modern-minimal overrides so the public site's
    flat neon tokens (radius 0, violet accent) stay untouched. Applied to the
    dashboard wrapper and any portal surface (dialogs, sheets, menus). */

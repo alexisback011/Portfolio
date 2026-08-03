@@ -102,6 +102,50 @@ Admin login: `admin@alex.dev` / `admin123`
 
 ---
 
+## Spotify "Now Playing" widget
+
+The floating music widget polls `GET /api/spotify/now-playing`, which proxies
+Spotify's `currently-playing` endpoint (with a `recently-played` fallback).
+It only turns on once you connect your own Spotify account:
+
+1. Go to [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard),
+   log in with your Spotify account, and click **Create app**.
+2. Give it a name (e.g. "Alex Portfolio"), check **Web API**, and add this
+   **Redirect URI**:
+   ```
+   http://127.0.0.1:8888/callback
+   ```
+3. Note the **Client ID** and **Client Secret**.
+4. Generate the refresh token (one-time OAuth dance):
+   ```powershell
+   Set-Location backend
+   python scripts/get_spotify_token.py --client-id YOUR_CLIENT_ID --client-secret YOUR_CLIENT_SECRET
+   ```
+   Your browser opens, you approve, and the script prints three lines.
+5. Add those three values to:
+   - `backend/.env` (local dev):
+     ```
+     SPOTIFY_CLIENT_ID=...
+     SPOTIFY_CLIENT_SECRET=...
+     SPOTIFY_REFRESH_TOKEN=...
+     ```
+   - The Render service env vars (for production, same three names).
+6. Restart the backend / redeploy. The widget appears bottom-right when
+   something is playing (animated equalizer), falls back to your last played
+   track when nothing is playing, and hides entirely if the values are wrong
+   or missing.
+
+Notes:
+
+- The refresh token stays server-side; the browser only ever calls your own
+  `/api/spotify/now-playing` endpoint.
+- Access tokens are auto-refreshed and cached for an hour, so the backend
+  won't hammer Spotify.
+- The endpoint degrades safely: if credentials are missing it returns
+  `{"configured": false}` and the widget hides.
+
+---
+
 ## Deployment
 
 The backend is plain FastAPI + SQLAlchemy and runs anywhere Python (or Docker)
