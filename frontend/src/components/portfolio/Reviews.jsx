@@ -202,14 +202,22 @@ export const Reviews = () => {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, ease: EASE, delay: 0.2 }}
-                className="flex flex-col gap-3 border border-white/15 bg-white/5 p-5"
+                className="flex flex-col gap-3 rounded-lg border border-white/15 bg-white/5 p-5"
               >
                 <span className="text-xs font-bold uppercase tracking-[0.3em] text-secondary">
                   [ RANKING ]
                 </span>
                 <div className="flex flex-col divide-y divide-white/10">
-                  {topReviews.map((r) => (
-                    <div key={r.id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                  {topReviews.map((r, i) => (
+                    <motion.div
+                      key={r.id}
+                      initial={{ opacity: 0, x: -16 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      whileHover={{ x: 4 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.45, ease: EASE, delay: i * 0.08 }}
+                      className="flex items-center justify-between gap-3 rounded py-2.5 px-1 first:pt-0 last:pb-0 hover:bg-white/5"
+                    >
                       <span
                         className={`w-7 shrink-0 font-display font-black text-lg leading-none ${
                           r.rank <= 3 ? "text-primary" : "text-muted-foreground"
@@ -217,6 +225,19 @@ export const Reviews = () => {
                       >
                         #{r.rank}
                       </span>
+                      <div className="h-6 w-6 shrink-0 overflow-hidden rounded-full border border-white/20 bg-white/5">
+                        {r.profile_image ? (
+                          <img
+                            src={r.profile_image}
+                            alt={`${r.name} avatar`}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-[9px] font-black text-primary">
+                            {r.name?.[0]?.toUpperCase()}
+                          </div>
+                        )}
+                      </div>
                       <div className="flex min-w-0 flex-1 flex-col gap-1">
                         <span className="inline-flex min-w-0 items-center gap-1.5">
                           <span className="truncate font-display font-bold uppercase tracking-tight text-sm">
@@ -231,7 +252,7 @@ export const Reviews = () => {
                       <span className="inline-flex shrink-0 items-center gap-1 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
                         <Heart size={12} className="fill-primary text-primary" /> {r.likes || 0}
                       </span>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
               </motion.div>
