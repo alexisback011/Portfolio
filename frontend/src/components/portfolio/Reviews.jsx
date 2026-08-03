@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Marquee from "react-fast-marquee";
-import { Star, BadgeCheck } from "lucide-react";
+import { Star, BadgeCheck, Heart } from "lucide-react";
+import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 import { API } from "../../lib/api";
 
 const EASE = [0.85, 0, 0.15, 1];
@@ -32,12 +35,14 @@ const Stars = ({ value, size = 14 }) => (
 export const Reviews = () => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
-        const { data } = await axios.get(`${API}/review`);
+        const { data } = await axios.get(`${API}/review`, { withCredentials: true });
         if (!cancelled) setReviews(data);
       } catch {
         if (!cancelled) setReviews([]);
@@ -52,6 +57,31 @@ export const Reviews = () => {
       clearInterval(interval);
     };
   }, []);
+
+  const toggleLike = async (r) => {
+    if (!user) {
+      toast.info("Sign in to like reviews.");
+      navigate("/login");
+      return;
+    }
+    const target = !r.liked;
+    const delta = target ? 1 : -1;
+    setReviews((prev) =>
+      prev.map((x) =>
+        x.id === r.id ? { ...x, liked: target, likes: Math.max(0, (x.likes || 0) + delta) } : x
+      )
+    );
+    try {
+      await axios({
+        method: target ? "post" : "delete",
+        url: `${API}/review/${r.id}/like`,
+        withCredentials: true,
+      });
+    } catch {
+      setReviews((prev) => prev.map((x) => (x.id === r.id ? { ...x, liked: r.liked, likes: r.likes || 0 } : x)));
+      toast.error("Could not update like.");
+    }
+  };
 
   return (
     <section
@@ -133,28 +163,44 @@ export const Reviews = () => {
                   <p className="flex-1 text-sm font-light text-muted-foreground leading-relaxed">
                     "{r.comment}"
                   </p>
-                  <div className="flex items-center gap-2.5">
-                    <div className="h-7 w-7 rounded-full border border-white/20 overflow-hidden bg-white/5 shrink-0">
-                      {r.profile_image ? (
-                        <img
-                          src={r.profile_image}
-                          alt={`${r.name} avatar`}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="h-full w-full flex items-center justify-center text-[10px] font-black text-primary">
-                          {r.name?.[0]?.toUpperCase()}
-                        </div>
-                      )}
-                    </div>
-                    <span className="inline-flex items-center gap-1.5">
-                      <span className="font-display font-bold uppercase tracking-tight text-sm">
-                        {r.name}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <div className="h-7 w-7 rounded-full border border-white/20 overflow-hidden bg-white/5 shrink-0">
+                        {r.profile_image ? (
+                          <img
+                            src={r.profile_image}
+                            alt={`${r.name} avatar`}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="h-full w-full flex items-center justify-center text-[10px] font-black text-primary">
+                            {r.name?.[0]?.toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <span className="inline-flex min-w-0 items-center gap-1.5">
+                        <span className="truncate font-display font-bold uppercase tracking-tight text-sm">
+                          {r.name}
+                        </span>
+                        {r.is_verified && (
+                          <BadgeCheck size={14} className="text-primary shrink-0" aria-label="Verified member" />
+                        )}
                       </span>
-                      {r.is_verified && (
-                        <BadgeCheck size={14} className="text-primary" aria-label="Verified member" />
-                      )}
-                    </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleLike(r)}
+                      aria-label={r.liked ? "Unlike this review" : "Like this review"}
+                      className="inline-flex shrink-0 items-center gap-1.5 text-xs font-bold uppercase tracking-[0.2em] transition-colors hover:text-primary"
+                    >
+                      <Heart
+                        size={14}
+                        className={r.liked ? "fill-primary text-primary" : "text-white/40 hover:text-primary"}
+                      />
+                      <span className={r.liked ? "text-primary" : "text-white/40"}>
+                        {r.likes || 0}
+                      </span>
+                    </button>
                   </div>
                 </div>
               ))}

@@ -15,6 +15,7 @@ import {
   Search,
   Hash,
   Fingerprint,
+  Heart,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatApiErrorDetail } from "@/context/AuthContext";
@@ -597,6 +598,9 @@ const AdminDashboard = ({ page, onNavigate }) => {
                       ))}
                     </span>
                     <span className="text-xs text-muted-foreground">{fmtDate(r.created_at)}</span>
+                    <span className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground">
+                      <Heart size={12} className="fill-primary text-primary" /> {r.likes || 0}
+                    </span>
                     <ConfirmDialog
                       title="Delete review"
                       description={`Delete the review from ${r.name}? This cannot be undone.`}

@@ -613,7 +613,85 @@ class TestReview:
         assert r.status_code == 404
 
 
-# ---------- NSFW moderation tests ----------
+# ---------- Review likes ----------
+class TestReviewLikes:
+    def _review_user(self):
+        email = f"LIKE_{uuid.uuid4().hex[:8]}@test.dev"
+        session = requests.Session()
+        r = session.post(f"{BASE_URL}/api/auth/register",
+                         json={"name": "LIKE FAN", "email": email, "password": "pass1234"})
+        assert r.status_code == 200
+        return session, r.json()
+
+    def test_like_requires_auth(self):
+        a, _ = self._review_user()
+        created = a.post(f"{BASE_URL}/api/review",
+                         json={"rating": 5, "comment": "like me"}).json()
+        r = requests.post(f"{BASE_URL}/api/review/{created['id']}/like")
+        assert r.status_code == 401
+
+    def test_like_unlike_flow(self):
+        a, _ = self._review_user()
+        created = a.post(f"{BASE_URL}/api/review",
+                         json={"rating": 5, "comment": "like flow"}).json()
+        b, _ = self._review_user()
+
+        # like -> count increments, liked true, fields present
+        r = b.post(f"{BASE_URL}/api/review/{created['id']}/like")
+        assert r.status_code == 200, r.text
+        assert r.json()["likes"] == 1
+        assert r.json()["liked"] is True
+        assert "rank" in r.json()
+
+        # duplicate like is idempotent
+        r = b.post(f"{BASE_URL}/api/review/{created['id']}/like")
+        assert r.status_code == 200
+        assert r.json()["likes"] == 1
+
+        # public list reflects likes + liked for logged-in viewer
+        r = b.get(f"{BASE_URL}/api/review")
+        item = next(x for x in r.json() if x["id"] == created["id"])
+        assert item["likes"] == 1
+        assert item["liked"] is True
+        assert item["rank"] >= 1
+
+        # anonymous viewer sees count but liked false
+        r = requests.get(f"{BASE_URL}/api/review")
+        item = next(x for x in r.json() if x["id"] == created["id"])
+        assert item["likes"] == 1
+        assert item["liked"] is False
+
+        # my reviews include likes + rank
+        r = a.get(f"{BASE_URL}/api/review/me")
+        mine = next(x for x in r.json() if x["id"] == created["id"])
+        assert mine["likes"] == 1
+        assert mine["rank"] >= 1
+
+        # unlike -> count back to 0, liked false
+        r = b.delete(f"{BASE_URL}/api/review/{created['id']}/like")
+        assert r.status_code == 200, r.text
+        assert r.json()["likes"] == 0
+        assert r.json()["liked"] is False
+
+        # liking a missing review -> 404
+        r = b.post(f"{BASE_URL}/api/review/nope/like")
+        assert r.status_code == 404
+
+    def test_rank_reflects_like_count(self):
+        a, _ = self._review_user()
+        b, _ = self._review_user()
+        r1 = a.post(f"{BASE_URL}/api/review",
+                    json={"rating": 5, "comment": "top review"}).json()
+        r2 = a.post(f"{BASE_URL}/api/review",
+                    json={"rating": 4, "comment": "less liked"}).json()
+
+        b.post(f"{BASE_URL}/api/review/{r1['id']}/like")
+
+        me = a.get(f"{BASE_URL}/api/review/me").json()
+        mine1 = next(x for x in me if x["id"] == r1["id"])
+        mine2 = next(x for x in me if x["id"] == r2["id"])
+        assert mine1["likes"] == 1
+        assert mine1["rank"] < mine2["rank"]
 class TestNsfwModeration:
     def test_request_otp_rejects_profane_name(self, client):
         email = f"nsfw_{uuid.uuid4().hex[:8]}@test.dev"

@@ -9,6 +9,7 @@ import {
   Plus,
   Quote,
   BadgeCheck,
+  Heart,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth, formatApiErrorDetail } from "@/context/AuthContext";
@@ -444,6 +445,17 @@ const UserDashboard = ({ page, onNavigate }) => {
                   <div className="flex items-center justify-between gap-4">
                     <StarRating value={r.rating} size={14} disabled />
                     <div className="flex shrink-0 items-center gap-3">
+                      <span className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                        <Heart size={12} className="fill-primary text-primary" /> {r.likes || 0}
+                      </span>
+                      {typeof r.rank === "number" && (
+                        <span
+                          className="inline-flex items-center rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-primary"
+                          data-testid={`rank-${r.id}`}
+                        >
+                          #{r.rank}
+                        </span>
+                      )}
                       <span className="text-xs text-muted-foreground">
                         {new Date(r.created_at).toLocaleDateString()}
                       </span>
@@ -610,10 +622,23 @@ const UserDashboard = ({ page, onNavigate }) => {
           ) : (
             myReviews.slice(0, 3).map((r) => (
               <Card key={r.id} className="p-5">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <StarRating value={r.rating} size={13} disabled />
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(r.created_at).toLocaleDateString()}
+                  <span className="inline-flex shrink-0 items-center gap-2">
+                    <span className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                      <Heart size={12} className="fill-primary text-primary" /> {r.likes || 0}
+                    </span>
+                    {typeof r.rank === "number" && (
+                      <span
+                        className="inline-flex items-center rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-primary"
+                        data-testid={`overview-rank-${r.id}`}
+                      >
+                        #{r.rank}
+                      </span>
+                    )}
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(r.created_at).toLocaleDateString()}
+                    </span>
                   </span>
                 </div>
                 <p className="mt-3 line-clamp-2 text-sm font-light text-muted-foreground">

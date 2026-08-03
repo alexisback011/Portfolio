@@ -102,6 +102,16 @@
   .btn-danger:hover { background: rgba(248,113,113,.12); color: var(--danger); border-color: var(--danger); box-shadow: none; }
   .btn-sm { padding: 8px 12px; font-size: 9px; min-height: 32px; border-radius: 8px; }
   .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .like-btn {
+    font-family: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+    background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 8px;
+    padding: 8px 12px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    min-height: 32px; transition: color .2s, border-color .2s, box-shadow .2s, transform .1s;
+  }
+  .like-btn:hover { color: var(--primary); border-color: var(--primary); box-shadow: var(--glow-p); }
+  .like-btn:active { transform: scale(.95); }
+  .like-btn.liked { color: var(--primary); border-color: rgba(255,0,89,.5); background: rgba(255,0,89,.08); }
+  .like-btn .heart { font-size: 14px; line-height: 1; }
   .icon-btn {
     font-family: inherit; cursor: pointer; width: 40px; height: 40px; flex-shrink: 0;
     display: inline-flex; align-items: center; justify-content: center;
@@ -193,6 +203,7 @@
   .role.admin { color: var(--primary); border-color: rgba(255,0,89,.4); background: rgba(255,0,89,.08); }
   .role.user { color: var(--secondary); border-color: rgba(0,255,255,.35); background: rgba(0,255,255,.07); }
   .chip { font-size: 9px; letter-spacing: 2px; font-weight: 700; padding: 3px 7px; border: 1px solid rgba(248,113,113,.4); color: var(--danger); text-transform: uppercase; border-radius: 999px; background: rgba(248,113,113,.08); }
+  .chip-verified { border-color: rgba(52,211,153,.4); color: #34d399; background: rgba(52,211,153,.08); }
   .status { font-size: 9px; letter-spacing: 2px; font-weight: 700; text-transform: uppercase; }
   .status.used { color: var(--primary); }
   .status.expired { color: var(--danger); }
@@ -533,6 +544,18 @@
       render(); toast("Review deleted.");
     }).catch(function (e) { toast(apiError(e), true); });
   };
+  window._like = function (id) {
+    var r = null;
+    for (var i = 0; i < state.reviews.length; i++) {
+      if (state.reviews[i].id === id) { r = state.reviews[i]; break; }
+    }
+    if (!r) return;
+    req(r.liked ? "DELETE" : "POST", "/review/" + id + "/like").then(function (u) {
+      if (u && typeof u.likes === "number") { r.likes = u.likes; r.liked = !!u.liked; }
+      render();
+      toast(r.liked ? "Review liked." : "Like removed.");
+    }).catch(function (e) { toast(apiError(e), true); });
+  };
   window._delLogin = function (id) {
     if (!confirm("Delete this login record permanently?")) return;
     req("DELETE", "/admin/logins/" + id).then(function () {
@@ -654,7 +677,7 @@
             "<div>" +
               '<div class="name">' + esc(u.name) + '</div>' +
               '<a class="meta link" href="mailto:' + esc(u.email) + '">' + esc(u.email) + "</a>" +
-              '<div><span class="role ' + esc(u.role) + '">' + esc(u.role) + "</span>" + (u.is_banned ? ' <span class="chip">Banned</span>' : "") + "</div>" +
+              '<div><span class="role ' + esc(u.role) + '">' + esc(u.role) + "</span>" + (u.is_banned ? ' <span class="chip">Banned</span>' : ' <span class="chip chip-verified">✓ Verified</span>') + "</div>" +
             "</div></div>" +
             '<div class="meta" style="text-align:right;">' + fmt(u.created_at) + "</div>" +
           "</div>" +
@@ -702,10 +725,11 @@
       html +=
         '<div class="card"><div class="card-head"><div class="who">' +
           '<div class="avatar">' + av + "</div>" +
-          '<div><div class="name">' + esc(r.name) + '</div><div class="stars">' + stars(r.rating) + "</div></div></div>" +
+          '<div><div class="name">' + esc(r.name) + (r.is_verified ? ' <span class="chip chip-verified">✓ Verified</span>' : "") + '</div><div class="stars">' + stars(r.rating) + "</div></div></div>" +
           '<div class="meta" style="text-align:right;">' + fmt(r.created_at) + "</div></div>" +
           '<div class="card-body"><p class="txt">' + esc(r.comment) + "</p>" +
-          '<div class="actions"><button class="btn btn-danger btn-sm" onclick="_delReview(\'' + r.id + '\')">Delete</button></div></div></div>';
+          '<div class="actions"><button class="like-btn' + (r.liked ? ' liked' : '') + '" onclick="_like(\'' + r.id + '\')"><span class="heart">' + (r.liked ? "\u2665" : "\u2661") + '</span> <span>' + (r.likes || 0) + '</span></button>' +
+          '<button class="btn btn-danger btn-sm" onclick="_delReview(\'' + r.id + '\')">Delete</button></div></div></div>';
     });
     p.innerHTML += html + "</div>";
   }

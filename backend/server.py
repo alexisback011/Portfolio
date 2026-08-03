@@ -56,6 +56,16 @@ if DATABASE_URL.startswith("sqlite"):
 engine = create_async_engine(DATABASE_URL, **_engine_kwargs)
 SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
+if DATABASE_URL.startswith("sqlite"):
+    from sqlalchemy import event as _sa_event
+
+    @_sa_event.listens_for(engine.sync_engine, "connect")
+    def _set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA busy_timeout=30000")
+        cursor.close()
+
 
 class Base(DeclarativeBase):
     pass
@@ -94,6 +104,16 @@ class Review(Base):
     profile_image: Mapped[str | None] = mapped_column(Text, nullable=True)
     rating: Mapped[int] = mapped_column(Integer, nullable=False)
     comment: Mapped[str] = mapped_column(String(1000), nullable=False)
+    likes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
+
+
+class ReviewLike(Base):
+    __tablename__ = "review_likes"
+    review_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
     )
@@ -593,6 +613,11 @@ async def init_db():
             await conn.execute(text("ALTER TABLE reviews ADD COLUMN profile_image VARCHAR(2000)"))
     except Exception:
         pass
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("ALTER TABLE reviews ADD COLUMN likes INTEGER DEFAULT 0"))
+    except Exception:
+        pass
     # allow multiple accounts to share an email: drop any legacy unique index/constraint
     for stmt in (
         "DROP INDEX IF EXISTS ix_users_email",
@@ -737,6 +762,9 @@ class ReviewOut(BaseModel):
     profile_image: str | None = None
     rating: int
     comment: str
+    likes: int = 0
+    rank: int | None = None
+    liked: bool = False
     created_at: datetime
     is_verified: bool = False
 
@@ -805,6 +833,42 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
         raise HTTPException(status_code=401, detail="Token expired")
     except (jwt.InvalidTokenError, ValueError, TypeError):
         raise HTTPException(status_code=401, detail="Invalid token")
+
+
+async def optional_current_user(request: Request, db: AsyncSession = Depends(get_db)):
+    try:
+        return await get_current_user(request, db)
+    except HTTPException:
+        return None
+
+
+async def _review_ranks(db: AsyncSession) -> dict:
+    rows = (await db.execute(select(Review.id, Review.likes))).all()
+    ordered = sorted(rows, key=lambda r: (-r[1], r[0]))
+    ranks = {}
+    prev = None
+    for i, row in enumerate(ordered, start=1):
+        if prev is not None and row[1] == prev[1]:
+            ranks[row[0]] = ranks[prev[0]]
+        else:
+            ranks[row[0]] = i
+        prev = row
+    return ranks
+
+
+async def _liked_ids(db: AsyncSession, viewer_id: int | None) -> set:
+    if viewer_id is None:
+        return set()
+    rows = (await db.execute(
+        select(ReviewLike.review_id).where(ReviewLike.user_id == viewer_id)
+    )).all()
+    return {row[0] for row in rows}
+
+
+async def _review_payload(r: Review, rank_map: dict, liked_ids: set, verified: bool) -> dict:
+    return {"id": r.id, "name": r.name, "rating": r.rating, "comment": r.comment,
+            "likes": r.likes or 0, "rank": rank_map.get(r.id), "liked": r.id in liked_ids,
+            "created_at": r.created_at, "profile_image": r.profile_image, "is_verified": verified}
 
 
 async def require_admin(user: dict = Depends(get_current_user)):
@@ -1090,13 +1154,12 @@ async def create_review(input: ReviewCreate, current=Depends(get_current_user),
     db.add(review)
     await db.commit()
     await db.refresh(review)
-    return {"id": review.id, "name": review.name, "rating": review.rating,
-            "comment": review.comment, "created_at": review.created_at,
-            "profile_image": review.profile_image, "is_verified": True}
+    rank_map = await _review_ranks(db)
+    return await _review_payload(review, rank_map, set(), True)
 
 
 @api_router.get("/review", response_model=List[ReviewOut])
-async def list_reviews(db: AsyncSession = Depends(get_db)):
+async def list_reviews(current=Depends(optional_current_user), db: AsyncSession = Depends(get_db)):
     stmt = select(Review).order_by(Review.created_at.desc()).limit(200)
     rows = (await db.scalars(stmt)).all()
     ids = {r.user_id for r in rows if r.user_id is not None}
@@ -1104,14 +1167,13 @@ async def list_reviews(db: AsyncSession = Depends(get_db)):
     if ids:
         user_rows = (await db.execute(select(User.id, User.is_banned).where(User.id.in_(ids)))).all()
         banned = {row[0] for row in user_rows if row[1]}
+    viewer_id = current["id"] if current else None
+    rank_map = await _review_ranks(db)
+    liked_ids = await _liked_ids(db, int(viewer_id) if viewer_id else None)
     result = []
     for r in rows:
-        result.append({
-            "id": r.id, "name": r.name, "rating": r.rating,
-            "comment": r.comment, "created_at": r.created_at,
-            "profile_image": r.profile_image,
-            "is_verified": r.user_id is not None and r.user_id not in banned,
-        })
+        verified = r.user_id is not None and r.user_id not in banned
+        result.append(await _review_payload(r, rank_map, liked_ids, verified))
     return result
 
 
@@ -1120,9 +1182,45 @@ async def my_reviews(current=Depends(get_current_user), db: AsyncSession = Depen
     uid = int(current["id"])
     stmt = select(Review).where(Review.user_id == uid).order_by(Review.created_at.desc())
     rows = (await db.scalars(stmt)).all()
-    return [{"id": r.id, "name": r.name, "rating": r.rating,
-             "comment": r.comment, "created_at": r.created_at,
-             "profile_image": r.profile_image, "is_verified": True} for r in rows]
+    rank_map = await _review_ranks(db)
+    liked_ids = await _liked_ids(db, uid)
+    return [await _review_payload(r, rank_map, liked_ids, True) for r in rows]
+
+
+@api_router.post("/review/{review_id}/like", response_model=ReviewOut)
+async def like_review(review_id: str, current=Depends(get_current_user),
+                      db: AsyncSession = Depends(get_db)):
+    review = await db.get(Review, review_id)
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    uid = int(current["id"])
+    exists = await db.get(ReviewLike, (review_id, uid))
+    if not exists:
+        db.add(ReviewLike(review_id=review_id, user_id=uid))
+        review.likes = (review.likes or 0) + 1
+        await db.commit()
+        await db.refresh(review)
+    rank_map = await _review_ranks(db)
+    liked_ids = await _liked_ids(db, uid)
+    return await _review_payload(review, rank_map, liked_ids, True)
+
+
+@api_router.delete("/review/{review_id}/like", response_model=ReviewOut)
+async def unlike_review(review_id: str, current=Depends(get_current_user),
+                        db: AsyncSession = Depends(get_db)):
+    review = await db.get(Review, review_id)
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    uid = int(current["id"])
+    exists = await db.get(ReviewLike, (review_id, uid))
+    if exists:
+        await db.delete(exists)
+        review.likes = max(0, (review.likes or 0) - 1)
+        await db.commit()
+        await db.refresh(review)
+    rank_map = await _review_ranks(db)
+    liked_ids = await _liked_ids(db, uid)
+    return await _review_payload(review, rank_map, liked_ids, True)
 
 
 @api_router.patch("/review/{review_id}", response_model=ReviewOut)
@@ -1142,9 +1240,9 @@ async def update_review(review_id: str, input: ReviewCreate,
     review.profile_image = user.profile_image
     await db.commit()
     await db.refresh(review)
-    return {"id": review.id, "name": review.name, "rating": review.rating,
-            "comment": review.comment, "created_at": review.created_at,
-            "profile_image": review.profile_image}
+    rank_map = await _review_ranks(db)
+    liked_ids = await _liked_ids(db, user.id)
+    return await _review_payload(review, rank_map, liked_ids, True)
 
 
 @api_router.delete("/review/{review_id}")
@@ -1157,6 +1255,7 @@ async def delete_review(review_id: str, current=Depends(get_current_user), db: A
         raise HTTPException(status_code=401, detail="User not found")
     if review.user_id != user.id and user.role != "admin":
         raise HTTPException(status_code=403, detail="You can only delete your own reviews")
+    await db.execute(delete(ReviewLike).where(ReviewLike.review_id == review.id))
     await db.delete(review)
     await db.commit()
     return {"message": "Review deleted"}
@@ -1227,6 +1326,9 @@ async def delete_user(user_id: int, admin=Depends(require_admin), db: AsyncSessi
     if user.role == "admin":
         raise HTTPException(status_code=400, detail="Cannot delete an admin")
     await db.execute(delete(LoginRecord).where(LoginRecord.user_id == user.id))
+    review_ids = (await db.scalars(select(Review.id).where(Review.user_id == user.id))).all()
+    if review_ids:
+        await db.execute(delete(ReviewLike).where(ReviewLike.review_id.in_(review_ids)))
     await db.execute(delete(Review).where(Review.user_id == user.id))
     await db.delete(user)
     await db.commit()
