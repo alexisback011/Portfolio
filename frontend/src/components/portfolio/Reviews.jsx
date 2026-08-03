@@ -238,7 +238,7 @@ export const Reviews = () => {
                           </div>
                         )}
                       </div>
-                      <div className="flex min-w-0 flex-1 flex-col gap-1">
+                      <div className="flex min-w-0 flex-1 flex-col justify-center">
                         <span className="inline-flex min-w-0 items-center gap-1.5">
                           <span className="truncate font-display font-bold uppercase tracking-tight text-sm">
                             {r.name}
@@ -247,7 +247,6 @@ export const Reviews = () => {
                             <BadgeCheck size={12} className="shrink-0 text-primary" aria-label="Verified member" />
                           )}
                         </span>
-                        <Stars value={r.rating} size={10} />
                       </div>
                       <span className="inline-flex shrink-0 items-center gap-1 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
                         <Heart size={12} className="fill-primary text-primary" /> {r.likes || 0}
