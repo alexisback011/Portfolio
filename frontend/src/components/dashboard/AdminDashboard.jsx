@@ -43,6 +43,7 @@ import ConfirmDialog from "./ConfirmDialog";
 import SignupsChart from "./charts/SignupsChart";
 import RatingsChart from "./charts/RatingsChart";
 import AppDownloadCard from "./AppDownloadCard";
+import ReviewCrown from "../ReviewCrown";
 
 const fmtDate = (v) => (v ? new Date(v).toLocaleDateString() : "—");
 const fmtDateTime = (v) => (v ? new Date(v).toLocaleString() : "—");
@@ -578,6 +579,7 @@ const AdminDashboard = ({ page, onNavigate }) => {
                     <span className="min-w-0 truncate font-display text-sm font-bold uppercase tracking-tight">
                       {r.name}
                     </span>
+                    {r.rank <= 3 && <ReviewCrown rank={r.rank} size={14} className="shrink-0" />}
                     {r.is_verified && (
                       <BadgeCheck className="h-4 w-4 shrink-0 text-primary" aria-label="Verified member" />
                     )}

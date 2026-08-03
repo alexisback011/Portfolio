@@ -198,6 +198,12 @@
   }
   .avatar img { width: 100%; height: 100%; object-fit: cover; }
   .name { font-family: 'Unbounded', sans-serif; font-weight: 700; text-transform: uppercase; font-size: 12px; letter-spacing: .5px; }
+  .crown { display: inline-block; vertical-align: middle; margin-left: 4px; line-height: 0; animation: crownSway 2s ease-in-out infinite; }
+  .crown svg { display: block; }
+  .crown.r1 { color: #FFE55C; filter: drop-shadow(0 0 5px rgba(255,229,92,.9)); }
+  .crown.r2 { color: #EAEAEA; filter: drop-shadow(0 0 5px rgba(234,234,234,.8)); }
+  .crown.r3 { color: #F0A35E; filter: drop-shadow(0 0 5px rgba(240,163,94,.85)); }
+  @keyframes crownSway { 0%,100% { transform: rotate(-8deg) translateY(0); } 50% { transform: rotate(-2deg) translateY(-1.5px); } }
   .meta { font-size: 11px; color: var(--muted); margin-top: 3px; word-break: break-all; }
   .role { font-size: 9px; letter-spacing: 2px; font-weight: 700; padding: 2px 6px; border-radius: 999px; border: 1px solid var(--line); }
   .role.admin { color: var(--primary); border-color: rgba(255,0,89,.4); background: rgba(255,0,89,.08); }
@@ -609,6 +615,11 @@
     for (var i = 1; i <= 5; i++) s += i <= n ? "\u2605" : "\u2606";
     return s;
   }
+  function _crown(rank) {
+    if (!rank || rank > 3) return "";
+    return '<span class="crown r' + rank + '" title="Rank ' + rank + '">' +
+      '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.735H5.81a1 1 0 0 1-.957-.735L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/></svg></span>';
+  }
 
   /* ---------- render ---------- */
   function render() {
@@ -725,7 +736,7 @@
       html +=
         '<div class="card"><div class="card-head"><div class="who">' +
           '<div class="avatar">' + av + "</div>" +
-          '<div><div class="name">' + esc(r.name) + (r.is_verified ? ' <span class="chip chip-verified">✓ Verified</span>' : "") + '</div><div class="stars">' + stars(r.rating) + "</div></div></div>" +
+          '<div><div class="name">' + esc(r.name) + _crown(r.rank) + (r.is_verified ? ' <span class="chip chip-verified">✓ Verified</span>' : "") + '</div><div class="stars">' + stars(r.rating) + "</div></div></div>" +
           '<div class="meta" style="text-align:right;">' + fmt(r.created_at) + "</div></div>" +
           '<div class="card-body"><p class="txt">' + esc(r.comment) + "</p>" +
           '<div class="actions"><button class="like-btn' + (r.liked ? ' liked' : '') + '" onclick="_like(\'' + r.id + '\')"><span class="heart">' + (r.liked ? "\u2665" : "\u2661") + '</span> <span>' + (r.likes || 0) + '</span></button>' +

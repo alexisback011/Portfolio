@@ -24,6 +24,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import PageHeader from "./PageHeader";
 import EmptyState from "./EmptyState";
 import ConfirmDialog from "./ConfirmDialog";
+import ReviewCrown from "../ReviewCrown";
 
 const EASE = [0.85, 0, 0.15, 1];
 
@@ -446,6 +447,7 @@ const UserDashboard = ({ page, onNavigate }) => {
                     <StarRating value={r.rating} size={14} disabled />
                     <div className="flex shrink-0 items-center gap-3">
                       <span className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                        {r.rank <= 3 && <ReviewCrown rank={r.rank} size={14} />}
                         <Heart size={12} className="fill-primary text-primary" /> {r.likes || 0}
                       </span>
                       <span className="text-xs text-muted-foreground">
@@ -618,6 +620,7 @@ const UserDashboard = ({ page, onNavigate }) => {
                   <StarRating value={r.rating} size={13} disabled />
                   <span className="inline-flex shrink-0 items-center gap-2">
                     <span className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                      {r.rank <= 3 && <ReviewCrown rank={r.rank} size={14} />}
                       <Heart size={12} className="fill-primary text-primary" /> {r.likes || 0}
                     </span>
                     <span className="text-xs text-muted-foreground">

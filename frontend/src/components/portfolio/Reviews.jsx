@@ -3,10 +3,11 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Marquee from "react-fast-marquee";
-import { Star, BadgeCheck, Heart, Crown } from "lucide-react";
+import { Star, BadgeCheck, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { API } from "../../lib/api";
+import ReviewCrown from "../ReviewCrown";
 
 const EASE = [0.85, 0, 0.15, 1];
 
@@ -240,20 +241,10 @@ export const Reviews = () => {
                           )}
                         </div>
                         {r.rank <= 3 && (
-                          <motion.div
-                            aria-label={`Rank ${r.rank} crown`}
-                            className={`absolute -top-1.5 -left-2 ${
-                              r.rank === 1
-                                ? "text-[#FFE55C] [filter:drop-shadow(0_0_5px_rgba(255,229,92,0.9))]"
-                                : r.rank === 2
-                                  ? "text-[#EAEAEA] [filter:drop-shadow(0_0_5px_rgba(234,234,234,0.8))]"
-                                  : "text-[#F0A35E] [filter:drop-shadow(0_0_5px_rgba(240,163,94,0.85))]"
-                            }`}
-                            animate={{ rotate: [-8, -2, -8], y: [0, -1.5, 0] }}
-                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                          >
-                            <Crown size={16} strokeWidth={1.5} className="fill-transparent" />
-                          </motion.div>
+                          <ReviewCrown
+                            rank={r.rank}
+                            className="absolute -top-1.5 -left-2"
+                          />
                         )}
                       </div>
                       <div className="flex min-w-0 flex-1 flex-col justify-center">
@@ -305,17 +296,25 @@ export const Reviews = () => {
                   </p>
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-2.5">
-                      <div className="h-7 w-7 rounded-full border border-white/20 overflow-hidden bg-white/5 shrink-0">
-                        {r.profile_image ? (
-                          <img
-                            src={r.profile_image}
-                            alt={`${r.name} avatar`}
-                            className="h-full w-full object-cover"
+                      <div className="relative h-7 w-7 shrink-0">
+                        <div className="h-7 w-7 rounded-full border border-white/20 overflow-hidden bg-white/5">
+                          {r.profile_image ? (
+                            <img
+                              src={r.profile_image}
+                              alt={`${r.name} avatar`}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center text-[10px] font-black text-primary">
+                              {r.name?.[0]?.toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                        {r.rank <= 3 && (
+                          <ReviewCrown
+                            rank={r.rank}
+                            className="absolute -top-1.5 -left-2"
                           />
-                        ) : (
-                          <div className="h-full w-full flex items-center justify-center text-[10px] font-black text-primary">
-                            {r.name?.[0]?.toUpperCase()}
-                          </div>
                         )}
                       </div>
                       <span className="inline-flex min-w-0 items-center gap-1.5">
