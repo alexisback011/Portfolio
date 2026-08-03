@@ -23,26 +23,31 @@ const BURST = [
 
 const LikePop = ({ likes, children }) => {
   const prev = useRef(null);
-  const [fire, setFire] = useState(false);
+  const [burst, setBurst] = useState(null);
 
   useEffect(() => {
-    if (prev.current !== null && likes > prev.current) {
-      setFire(true);
-      const t = setTimeout(() => setFire(false), 900);
+    if (prev.current === null) {
       prev.current = likes;
-      return () => clearTimeout(t);
+      return;
     }
-    prev.current = likes;
+    if (likes > prev.current) {
+      prev.current = likes;
+      setBurst((k) => (k === null ? 1 : k + 1));
+    } else {
+      prev.current = likes;
+    }
   }, [likes]);
 
   return (
     <motion.span
+      key={burst ?? "idle"}
       className="relative inline-flex"
-      animate={fire ? { scale: [1, 1.45, 1] } : { scale: 1 }}
+      initial={false}
+      animate={burst !== null ? { scale: [1, 1.45, 1] } : { scale: 1 }}
       transition={{ duration: 0.45 }}
     >
       {children}
-      {fire && (
+      {burst !== null && (
         <span className="pointer-events-none absolute left-1/2 top-1/2">
           {BURST.map((p, i) => (
             <motion.span
