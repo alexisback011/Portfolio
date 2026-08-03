@@ -521,7 +521,7 @@ const UserDashboard = ({ page, onNavigate }) => {
               </AvatarFallback>
             </Avatar>
             {bestRank && (
-              <ReviewCrown rank={bestRank} size={20} className="absolute -top-2 -left-2" />
+              <ReviewCrown rank={bestRank} size={20} className="absolute -top-2 -left-3" />
             )}
             <input
               ref={fileRef}
