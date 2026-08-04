@@ -30,6 +30,29 @@ const loadHistory = () => {
   return [greeting];
 };
 
+const Typewriter = ({ text, listRef }) => {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    setN(0);
+    let i = 0;
+    const t = setInterval(() => {
+      i += 1;
+      setN(i);
+      const el = listRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+      if (i >= text.length) clearInterval(t);
+    }, 14);
+    return () => clearInterval(t);
+  }, [text, listRef]);
+  const done = n >= text.length;
+  return (
+    <>
+      {text.slice(0, n)}
+      {!done && <span className="ai-caret" aria-hidden="true" />}
+    </>
+  );
+};
+
 const AIAssistant = () => {
   const [enabled, setEnabled] = useState(true);
   const [open, setOpen] = useState(false);
@@ -165,7 +188,7 @@ const AIAssistant = () => {
           >
             <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
               <div className="flex items-center gap-2.5">
-                <span className="ai-avatar flex h-8 w-8 items-center justify-center rounded-full bg-primary text-black">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-black">
                   <Bot size={15} />
                 </span>
                 <div>
@@ -187,12 +210,13 @@ const AIAssistant = () => {
               </button>
             </div>
 
-            <div className="relative min-h-0 flex-1 overflow-hidden">
-              <div
-                ref={listRef}
-                className="h-full space-y-3 overflow-y-auto px-4 py-4"
-              >
-                {messages.map((m, i) => (
+            <div
+              ref={listRef}
+              className="flex-1 space-y-3 overflow-y-auto px-4 py-4"
+            >
+              {messages.map((m, i) => {
+                const last = i === messages.length - 1;
+                return (
                   <div
                     key={i}
                     className={
@@ -201,23 +225,26 @@ const AIAssistant = () => {
                         : "mr-auto max-w-[85%] rounded-lg rounded-bl-sm border border-white/10 bg-white/5 px-3 py-2 text-[13px] text-foreground"
                     }
                   >
-                    {m.content}
+                    {m.role === "user" || !last ? (
+                      m.content
+                    ) : (
+                      <Typewriter text={m.content} listRef={listRef} />
+                    )}
                   </div>
-                ))}
-                {typing && (
-                  <div className="mr-auto flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-2.5">
-                    <span className="ai-typing">
-                      <i />
-                      <i />
-                      <i />
-                    </span>
-                  </div>
-                )}
-                {error && (
-                  <p className="text-[11px] text-amber-400/90">{error}</p>
-                )}
-              </div>
-              {typing && <span className="ai-scan" aria-hidden="true" />}
+                );
+              })}
+              {typing && (
+                <div className="mr-auto flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-2.5">
+                  <span className="ai-typing">
+                    <i />
+                    <i />
+                    <i />
+                  </span>
+                </div>
+              )}
+              {error && (
+                <p className="text-[11px] text-amber-400/90">{error}</p>
+              )}
             </div>
 
             <div className="border-t border-white/10 p-3">

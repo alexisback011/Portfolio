@@ -320,50 +320,16 @@ code {
     50% { opacity: 0.4; transform: scale(0.6); }
 }
 
-/* AI assistant widget: pulsing halo ring around the avatar (online signal) */
-.ai-avatar {
-    position: relative;
+/* AI assistant widget: blinking typewriter caret */
+.ai-caret {
+    display: inline-block;
+    width: 1ch;
+    margin-left: 1px;
+    background: hsl(var(--primary));
+    animation: aiCaret 0.8s step-end infinite;
 }
-.ai-avatar::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: 9999px;
-    border: 2px solid hsl(var(--primary) / 0.7);
-    pointer-events: none;
-    animation: aiHalo 1.6s ease-out infinite;
-}
-@keyframes aiHalo {
-    0% { transform: scale(1); opacity: 0.8; }
-    70% { transform: scale(1.8); opacity: 0; }
-    100% { transform: scale(1.8); opacity: 0; }
-}
-
-/* AI assistant widget: light sweep across the message list while typing */
-.ai-scan {
-    position: absolute;
-    inset: 0;
-    overflow: hidden;
-    pointer-events: none;
-    z-index: 10;
-}
-.ai-scan::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: -45%;
-    height: 45%;
-    background: linear-gradient(
-        to bottom,
-        transparent,
-        hsl(var(--primary) / 0.12),
-        transparent
-    );
-    animation: aiScan 2s ease-in-out infinite;
-}
-@keyframes aiScan {
-    to { transform: translateY(222%); }
+@keyframes aiCaret {
+    50% { opacity: 0; }
 }
 
 /* AI assistant typing indicator */
