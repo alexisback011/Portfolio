@@ -875,17 +875,29 @@ class TestNowPlaying:
 # ---------- AI assistant ----------
 class TestAIChat:
     def test_endpoint_shape(self, client):
-        # Deterministic when no key is configured (tests): returns
-        # configured:false without touching Gemini. With a key it must still
-        # be a well-formed payload.
-        import server
-        r = client.post(f"{BASE_URL}/api/ai/chat",
-                        json={"messages": [{"role": "user", "content": "hi"}]})
+        # Cheap probe: GET returns configured status without touching Gemini.
+        r = client.get(f"{BASE_URL}/api/ai/chat")
         assert r.status_code == 200
         data = r.json()
         assert "configured" in data
-        if not server._ai_configured():
-            assert data == {"configured": False}
+        assert data["configured"] in (True, False)
+
+    def test_not_configured(self, monkeypatch):
+        import json
+        import server
+        monkeypatch.setattr(server, "GEMINI_API_KEY", "")
+
+        class FakeReq:
+            class _Client:
+                host = "127.0.0.1"
+            client = _Client()
+
+        out = server.ai_chat(
+            server.ChatInput(messages=[{"role": "user", "content": "hi"}]),
+            FakeReq(),
+        )
+        assert out.status_code == 200
+        assert json.loads(out.body) == {"configured": False}
 
     def test_chat_mocked(self, monkeypatch):
         import json

@@ -294,7 +294,7 @@ LASTFM_USERNAME = os.environ.get("LASTFM_USERNAME", "").strip()
 # Site concierge chatbot backed by Google Gemini. The free tier is enough for
 # a portfolio. Setup: see RUN.md. Needs a Gemini API key (server-side only).
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
-AI_MODEL = os.environ.get("AI_MODEL", "gemini-2.0-flash").strip()
+AI_MODEL = os.environ.get("AI_MODEL", "gemini-flash-latest").strip()
 
 
 def is_admin_email(email: str) -> bool:

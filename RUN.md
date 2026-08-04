@@ -158,8 +158,8 @@ Notes:
 
 - The API key stays server-side; the browser only ever calls your own
   `/api/ai/chat` endpoint.
-- The model defaults to `gemini-2.0-flash`; override with an `AI_MODEL` env var
-  if you ever want a different one.
+- The model defaults to `gemini-flash-latest` (the current free-tier alias);
+  override with an `AI_MODEL` env var if you ever want a different one.
 - The endpoint is public, so it's lightly rate-limited per visitor (10
   messages/minute) to protect your free quota.
 - If the key is missing, `GET /api/ai/chat` returns `{"configured": false}`
