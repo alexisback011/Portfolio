@@ -33,7 +33,7 @@ const NowPlaying = () => {
 
     const load = async () => {
       try {
-        const res = await fetch(`${API}/spotify/now-playing`, {
+        const res = await fetch(`${API}/now-playing`, {
           credentials: "include",
         });
         if (!res.ok) return;
@@ -121,7 +121,7 @@ const NowPlaying = () => {
                 )}
               </div>
             )}
-            {title && (
+            {title && data.duration_ms > 0 && (
               <div className="flex items-center gap-3 px-4 pb-4 pt-3">
                 <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/10">
                   <div
@@ -138,7 +138,7 @@ const NowPlaying = () => {
             )}
             <div className="flex items-center justify-between border-t border-white/10 px-4 py-2.5">
               <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                {playing ? "spotify" : "last on spotify"}
+                {playing ? "last.fm" : "via last.fm"}
               </span>
               {url ? (
                 <a

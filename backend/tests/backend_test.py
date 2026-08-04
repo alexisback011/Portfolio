@@ -805,16 +805,68 @@ class TestOtpCustomization:
         assert EMAIL_SENDER_NAME  # display name configured
 
 
-# ---------- Spotify now playing ----------
-class TestSpotifyNowPlaying:
+# ---------- Now playing (Last.fm) ----------
+class TestNowPlaying:
     def test_endpoint_shape(self, client):
-        # Deterministic: never touches live Spotify. When credentials are
+        # Deterministic: never touches live Last.fm. When credentials are
         # absent (tests) it returns configured:false; otherwise it must still
         # be a well-formed payload.
-        r = client.get(f"{BASE_URL}/api/spotify/now-playing")
+        r = client.get(f"{BASE_URL}/api/now-playing")
         assert r.status_code == 200
         data = r.json()
         assert "configured" in data
         assert data["configured"] in (True, False)
         if data["configured"]:
             assert "playing" in data
+
+    def test_lastfm_parsing(self, monkeypatch):
+        import server
+        monkeypatch.setattr(server, "LASTFM_API_KEY", "k")
+        monkeypatch.setattr(server, "LASTFM_USERNAME", "u")
+
+        class FakeResp:
+            def raise_for_status(self):
+                pass
+
+            def json(self):
+                return {"recenttracks": {"track": [{
+                    "name": "Song",
+                    "@attr": {"nowplaying": "true"},
+                    "artist": {"#text": "Artist"},
+                    "album": {"#text": "Album"},
+                    "image": [
+                        {"size": "small", "#text": "http://img/small.jpg"},
+                        {"size": "large", "#text": "http://img/art.jpg"},
+                    ],
+                    "url": "http://last.fm/song",
+                    "date": {"uts": "1700000000"},
+                }]}}
+
+        monkeypatch.setattr(server.requests, "get",
+                            lambda *a, **k: FakeResp())
+        out = server._lastfm_now_playing()
+        assert out["configured"] is True
+        assert out["playing"] is True
+        assert out["from_recently_played"] is False
+        assert out["title"] == "Song"
+        assert out["artist"] == "Artist"
+        assert out["album"] == "Album"
+        assert out["cover"] == "http://img/art.jpg"
+        assert out["url"] == "http://last.fm/song"
+
+    def test_lastfm_no_tracks(self, monkeypatch):
+        import server
+        monkeypatch.setattr(server, "LASTFM_API_KEY", "k")
+        monkeypatch.setattr(server, "LASTFM_USERNAME", "u")
+
+        class FakeResp:
+            def raise_for_status(self):
+                pass
+
+            def json(self):
+                return {"recenttracks": {"track": []}}
+
+        monkeypatch.setattr(server.requests, "get",
+                            lambda *a, **k: FakeResp())
+        out = server._lastfm_now_playing()
+        assert out == {"configured": True, "playing": False}
