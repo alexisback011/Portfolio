@@ -10,6 +10,7 @@ const CustomCursor = () => {
   const [hovering, setHovering] = useState(false);
   const [pressed, setPressed] = useState(false);
   const [hidden, setHidden] = useState(true);
+  const [ripples, setRipples] = useState([]);
 
   const x = useMotionValue(-100);
   const y = useMotionValue(-100);
@@ -32,7 +33,16 @@ const CustomCursor = () => {
       setHovering(!!e.target.closest?.(INTERACTIVE));
     };
 
-    const onDown = () => setPressed(true);
+    const onDown = (e) => {
+      setPressed(true);
+      const id = Date.now() + Math.random();
+      setRipples((prev) =>
+        [...prev, { id, x: e.clientX, y: e.clientY }].slice(-6)
+      );
+      setTimeout(() => {
+        setRipples((prev) => prev.filter((r) => r.id !== id));
+      }, 550);
+    };
     const onUp = () => setPressed(false);
     const onLeave = () => setHidden(true);
     const onEnter = () => setHidden(false);
@@ -58,6 +68,16 @@ const CustomCursor = () => {
 
   return (
     <>
+      {ripples.map((r) => (
+        <motion.div
+          key={r.id}
+          className="custom-cursor-ripple"
+          style={{ left: r.x, top: r.y }}
+          initial={{ scale: 0.3, opacity: 0.9 }}
+          animate={{ scale: 1.6, opacity: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        />
+      ))}
       <motion.div
         className="custom-cursor-icon"
         style={{ x: ringX, y: ringY }}
