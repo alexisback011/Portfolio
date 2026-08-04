@@ -180,15 +180,16 @@ const AIAssistant = () => {
         {open && (
           <motion.div
             ref={cardRef}
-            initial={{ opacity: 0, y: 12, scale: 0.95 }}
+            initial={{ opacity: 0, y: 30, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.95 }}
-            transition={{ duration: 0.25, ease: [0.85, 0, 0.15, 1] }}
-            className="flex h-[460px] w-[340px] flex-col overflow-hidden rounded-2xl border border-white/15 bg-black/80 backdrop-blur-xl md:w-[380px]"
+            transition={{ type: "spring", stiffness: 320, damping: 22 }}
+            className="ai-card relative flex h-[460px] w-[340px] flex-col overflow-hidden rounded-2xl bg-black/80 backdrop-blur-xl md:w-[380px]"
           >
-            <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-black">
+            <div className="relative flex items-center justify-between overflow-hidden border-b border-white/10 px-4 py-3">
+              <span className="ai-aurora" aria-hidden="true" />
+              <div className="relative flex items-center gap-2.5">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary via-accent to-secondary text-black ring-1 ring-white/20">
                   <Bot size={15} />
                 </span>
                 <div>
@@ -217,8 +218,11 @@ const AIAssistant = () => {
               {messages.map((m, i) => {
                 const last = i === messages.length - 1;
                 return (
-                  <div
+                  <motion.div
                     key={i}
+                    initial={{ opacity: 0, x: m.role === "user" ? 14 : -14 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 24 }}
                     className={
                       m.role === "user"
                         ? "ml-auto max-w-[85%] rounded-lg rounded-br-sm bg-primary px-3 py-2 text-[13px] font-medium text-black"
@@ -230,7 +234,7 @@ const AIAssistant = () => {
                     ) : (
                       <Typewriter text={m.content} listRef={listRef} />
                     )}
-                  </div>
+                  </motion.div>
                 );
               })}
               {typing && (
@@ -279,10 +283,10 @@ const AIAssistant = () => {
         onClick={() => setOpen((v) => !v)}
         onPointerDown={(e) => dragControls.start(e)}
         aria-label={open ? "Hide assistant" : "Ask Alex"}
-        className="group flex items-center gap-2.5 rounded-full border border-white/15 bg-black/70 px-4 py-2.5 backdrop-blur-xl transition-colors hover:border-primary"
+        className="ai-pill group relative flex items-center gap-2.5 rounded-full bg-black/80 px-4 py-2.5 backdrop-blur-xl transition-colors hover:border-primary"
       >
-        <span className="shrink-0 text-primary">
-          <Bot size={15} />
+        <span className="relative flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary via-accent to-secondary text-black">
+          <Bot size={12} />
         </span>
         <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground">
           ask me
