@@ -30,34 +30,6 @@ const loadHistory = () => {
   return [greeting];
 };
 
-const cardVariants = {
-  hidden: { opacity: 0, y: 12, scale: 0.95 },
-  show: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      duration: 0.25,
-      ease: [0.85, 0, 0.15, 1],
-      staggerChildren: 0.08,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 10 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.3, ease: [0.85, 0, 0.15, 1] },
-  },
-};
-
-const bubbleVariants = {
-  hidden: { opacity: 0, y: 8 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.25, ease: [0.85, 0, 0.15, 1] } },
-};
-
 const AIAssistant = () => {
   const [enabled, setEnabled] = useState(true);
   const [open, setOpen] = useState(false);
@@ -185,28 +157,22 @@ const AIAssistant = () => {
         {open && (
           <motion.div
             ref={cardRef}
-            variants={cardVariants}
-            initial="hidden"
-            animate="show"
+            initial={{ opacity: 0, y: 12, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.95 }}
-            className={`relative flex h-[460px] w-[340px] flex-col overflow-hidden rounded-2xl border border-white/15 bg-black/80 backdrop-blur-xl md:w-[380px] ${
-              typing ? "music-vinyl" : ""
-            }`}
+            transition={{ duration: 0.25, ease: [0.85, 0, 0.15, 1] }}
+            className="flex h-[460px] w-[340px] flex-col overflow-hidden rounded-2xl border border-white/15 bg-black/80 backdrop-blur-xl md:w-[380px]"
           >
-            <motion.div
-              variants={itemVariants}
-              className="flex items-center justify-between border-b border-white/10 px-4 py-3"
-            >
+            <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
               <div className="flex items-center gap-2.5">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-black">
+                <span className="ai-avatar flex h-8 w-8 items-center justify-center rounded-full bg-primary text-black">
                   <Bot size={15} />
                 </span>
                 <div>
                   <p className="font-display text-xs font-black uppercase tracking-[0.15em]">
                     Alexa
                   </p>
-                  <p className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                    {!typing && <span className="music-dot" />}
+                  <p className="text-[10px] text-muted-foreground">
                     {typing ? "typing..." : "AI assistant · online"}
                   </p>
                 </div>
@@ -219,58 +185,42 @@ const AIAssistant = () => {
               >
                 <X size={16} />
               </button>
-            </motion.div>
+            </div>
 
-            <motion.div
-              variants={itemVariants}
-              ref={listRef}
-              className="flex-1 space-y-3 overflow-y-auto px-4 py-4"
-            >
-              {messages.map((m, i) => (
-                <motion.div
-                  key={i}
-                  variants={bubbleVariants}
-                  initial="hidden"
-                  animate="show"
-                  className={
-                    m.role === "user"
-                      ? "ml-auto max-w-[85%] rounded-lg rounded-br-sm bg-primary px-3 py-2 text-[13px] font-medium text-black"
-                      : "mr-auto max-w-[85%] rounded-lg rounded-bl-sm border border-white/10 bg-white/5 px-3 py-2 text-[13px] text-foreground"
-                  }
-                >
-                  {m.content}
-                </motion.div>
-              ))}
-              {typing && (
-                <motion.div
-                  variants={bubbleVariants}
-                  initial="hidden"
-                  animate="show"
-                  className="mr-auto flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-2.5"
-                >
-                  <span className="ai-typing">
-                    <i />
-                    <i />
-                    <i />
-                  </span>
-                </motion.div>
-              )}
-              {error && (
-                <motion.p
-                  variants={bubbleVariants}
-                  initial="hidden"
-                  animate="show"
-                  className="text-[11px] text-amber-400/90"
-                >
-                  {error}
-                </motion.p>
-              )}
-            </motion.div>
+            <div className="relative min-h-0 flex-1 overflow-hidden">
+              <div
+                ref={listRef}
+                className="h-full space-y-3 overflow-y-auto px-4 py-4"
+              >
+                {messages.map((m, i) => (
+                  <div
+                    key={i}
+                    className={
+                      m.role === "user"
+                        ? "ml-auto max-w-[85%] rounded-lg rounded-br-sm bg-primary px-3 py-2 text-[13px] font-medium text-black"
+                        : "mr-auto max-w-[85%] rounded-lg rounded-bl-sm border border-white/10 bg-white/5 px-3 py-2 text-[13px] text-foreground"
+                    }
+                  >
+                    {m.content}
+                  </div>
+                ))}
+                {typing && (
+                  <div className="mr-auto flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-2.5">
+                    <span className="ai-typing">
+                      <i />
+                      <i />
+                      <i />
+                    </span>
+                  </div>
+                )}
+                {error && (
+                  <p className="text-[11px] text-amber-400/90">{error}</p>
+                )}
+              </div>
+              {typing && <span className="ai-scan" aria-hidden="true" />}
+            </div>
 
-            <motion.div
-              variants={itemVariants}
-              className="border-t border-white/10 p-3"
-            >
+            <div className="border-t border-white/10 p-3">
               <div className="flex items-center gap-2">
                 <input
                   value={input}
@@ -292,7 +242,7 @@ const AIAssistant = () => {
                   <Send size={15} />
                 </button>
               </div>
-            </motion.div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -302,7 +252,7 @@ const AIAssistant = () => {
         onClick={() => setOpen((v) => !v)}
         onPointerDown={(e) => dragControls.start(e)}
         aria-label={open ? "Hide assistant" : "Ask Alex"}
-        className="group flex items-center gap-2.5 rounded-full border border-white/15 bg-black/70 px-4 py-2.5 backdrop-blur-xl transition-colors hover:border-primary ai-live"
+        className="group flex items-center gap-2.5 rounded-full border border-white/15 bg-black/70 px-4 py-2.5 backdrop-blur-xl transition-colors hover:border-primary"
       >
         <span className="shrink-0 text-primary">
           <Bot size={15} />
