@@ -1,9 +1,20 @@
 import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useDragControls } from "framer-motion";
 import { Bot, Send, X } from "lucide-react";
 import { API } from "../../lib/api";
 
 const HISTORY_KEY = "aiChatHistory";
+const POSITION_KEY = "aiAssistantPos";
+
+const loadPos = () => {
+  try {
+    const raw = JSON.parse(localStorage.getItem(POSITION_KEY) || "[0,0]");
+    if (Array.isArray(raw) && raw.length === 2 && raw.every(Number.isFinite)) {
+      return raw;
+    }
+  } catch {}
+  return [0, 0];
+};
 
 const greeting = {
   role: "assistant",
@@ -26,7 +37,32 @@ const AIAssistant = () => {
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const [error, setError] = useState(null);
+  const [savedPos] = useState(loadPos);
+  const dragX = useMotionValue(savedPos[0]);
+  const dragY = useMotionValue(savedPos[1]);
+  const dragControls = useDragControls();
+  const wrapRef = useRef(null);
+  const cardRef = useRef(null);
   const listRef = useRef(null);
+
+  const clampDrag = (write) => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const w = Math.max(el.offsetWidth, cardRef.current?.offsetWidth || 0, 340);
+    const h = Math.max(el.offsetHeight, cardRef.current?.offsetHeight || 0, 460);
+    const m = 20;
+    const nx = Math.min(vw - w - m, Math.max(-m, dragX.get()));
+    const ny = Math.min(m, Math.max(-(vh - h - m), dragY.get()));
+    dragX.set(nx);
+    dragY.set(ny);
+    if (write) {
+      try {
+        localStorage.setItem(POSITION_KEY, JSON.stringify([nx, ny]));
+      } catch {}
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -51,6 +87,20 @@ const AIAssistant = () => {
     const el = listRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages, typing, open]);
+
+  useEffect(() => {
+    clampDrag(false);
+  }, []);
+
+  useEffect(() => {
+    clampDrag(false);
+  }, [open]);
+
+  useEffect(() => {
+    const onResize = () => clampDrag(false);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   const send = async () => {
     const text = input.trim();
@@ -91,13 +141,22 @@ const AIAssistant = () => {
   if (!enabled) return null;
 
   return (
-    <div
-      className="fixed bottom-5 right-5 z-[90] flex flex-col items-end gap-2"
+    <motion.div
+      ref={wrapRef}
+      style={{ x: dragX, y: dragY }}
+      drag
+      dragListener={false}
+      dragControls={dragControls}
+      dragMomentum={false}
+      dragElastic={0}
+      onDragEnd={() => clampDrag(true)}
+      className="fixed bottom-5 right-5 z-[90] flex cursor-grab flex-col items-end gap-2 active:cursor-grabbing"
       data-testid="ai-assistant"
     >
       <AnimatePresence>
         {open && (
           <motion.div
+            ref={cardRef}
             initial={{ opacity: 0, y: 12, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.95 }}
@@ -188,6 +247,7 @@ const AIAssistant = () => {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        onPointerDown={(e) => dragControls.start(e)}
         aria-label={open ? "Hide assistant" : "Ask Alex"}
         className="group flex items-center gap-2.5 rounded-full border border-white/15 bg-black/70 px-4 py-2.5 backdrop-blur-xl transition-colors hover:border-primary"
       >
@@ -198,7 +258,7 @@ const AIAssistant = () => {
           ask me
         </span>
       </button>
-    </div>
+    </motion.div>
   );
 };
 
