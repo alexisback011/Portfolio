@@ -23,6 +23,29 @@ const formatMs = (ms) => {
   return `${m}:${String(s % 60).padStart(2, "0")}`;
 };
 
+const cardVariants = {
+  hidden: { opacity: 0, y: 12, scale: 0.95 },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      duration: 0.25,
+      ease: [0.85, 0, 0.15, 1],
+      staggerChildren: 0.08,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 10 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.3, ease: [0.85, 0, 0.15, 1] },
+  },
+};
+
 const Equalizer = ({ playing }) => (
   <span
     className={playing ? "eq eq-playing" : "eq eq-idle"}
@@ -131,75 +154,84 @@ const NowPlaying = () => {
         {open && (
           <motion.div
             ref={cardRef}
-            initial={{ opacity: 0, y: 12, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
+            variants={cardVariants}
+            initial="hidden"
+            animate="show"
             exit={{ opacity: 0, y: 12, scale: 0.95 }}
-            transition={{ duration: 0.25, ease: [0.85, 0, 0.15, 1] }}
-            className="w-64 overflow-hidden rounded-2xl border border-white/15 bg-black/70 backdrop-blur-xl"
+            className={`relative w-64 overflow-hidden rounded-2xl border border-white/15 bg-black/70 backdrop-blur-xl ${
+              playing ? "music-vinyl" : ""
+            }`}
           >
-            {cover ? (
-              <div className="relative aspect-square w-full overflow-hidden">
-                <img
-                  src={cover}
-                  alt={`${title} album art`}
-                  className={`h-full w-full object-cover ${playing ? "album-spin" : ""}`}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                <div className="absolute bottom-2 left-3 right-3">
+            <motion.div variants={itemVariants}>
+              {cover ? (
+                <div className="relative aspect-square w-full overflow-hidden">
+                  <img
+                    src={cover}
+                    alt={`${title} album art`}
+                    className={`h-full w-full object-cover ${playing ? "album-spin" : ""}`}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                  <div className="absolute bottom-2 left-3 right-3">
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                      {playing ? (
+                        <>
+                          <span className="music-dot" /> <Equalizer playing /> now playing
+                        </>
+                      ) : (
+                        <>
+                          <Music size={10} /> last played
+                        </>
+                      )}
+                    </div>
+                    <p className="mt-1 line-clamp-2 font-display text-sm font-bold leading-tight">
+                      {title}
+                    </p>
+                    <p className="mt-0.5 truncate text-xs text-muted-foreground">{artist}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4">
                   <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
                     {playing ? (
                       <>
-                        <Equalizer playing /> now playing
+                        <span className="music-dot" /> <Equalizer playing /> now playing
                       </>
                     ) : (
                       <>
-                        <Music size={10} /> last played
+                        <Music size={10} /> not playing
                       </>
                     )}
                   </div>
-                  <p className="mt-1 line-clamp-2 font-display text-sm font-bold leading-tight">
-                    {title}
-                  </p>
-                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{artist}</p>
-                </div>
-              </div>
-            ) : (
-              <div className="p-4">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                  {playing ? (
+                  {title && (
                     <>
-                      <Equalizer playing /> now playing
-                    </>
-                  ) : (
-                    <>
-                      <Music size={10} /> not playing
+                      <p className="mt-2 font-display text-sm font-bold">{title}</p>
+                      {artist && <p className="truncate text-xs text-muted-foreground">{artist}</p>}
                     </>
                   )}
                 </div>
-                {title && (
-                  <>
-                    <p className="mt-2 font-display text-sm font-bold">{title}</p>
-                    {artist && <p className="truncate text-xs text-muted-foreground">{artist}</p>}
-                  </>
-                )}
-              </div>
-            )}
+              )}
+            </motion.div>
             {title && data.duration_ms > 0 && (
-              <div className="flex items-center gap-3 px-4 pb-4 pt-3">
-                <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/10">
-                  <div
-                    className={`h-full rounded-full transition-all duration-1000 ${
-                      playing ? "bg-primary" : "bg-white/30"
-                    }`}
-                    style={{ width: `${pct}%` }}
-                  />
+              <motion.div variants={itemVariants}>
+                <div className="flex items-center gap-3 px-4 pb-4 pt-3">
+                  <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/10">
+                    <div
+                      className={`h-full rounded-full transition-all duration-1000 ${
+                        playing ? "bg-primary" : "bg-white/30"
+                      }`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] tabular-nums text-muted-foreground">
+                    {formatMs(playing ? data.progress_ms : data.duration_ms)}
+                  </span>
                 </div>
-                <span className="text-[10px] tabular-nums text-muted-foreground">
-                  {formatMs(playing ? data.progress_ms : data.duration_ms)}
-                </span>
-              </div>
+              </motion.div>
             )}
-            <div className="flex items-center justify-between border-t border-white/10 px-4 py-2.5">
+            <motion.div
+              variants={itemVariants}
+              className="flex items-center justify-between border-t border-white/10 px-4 py-2.5"
+            >
               <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
                 {playing ? "last.fm" : "via last.fm"}
               </span>
@@ -215,7 +247,7 @@ const NowPlaying = () => {
               ) : (
                 <span className="text-[11px] text-white/40">—</span>
               )}
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -224,13 +256,16 @@ const NowPlaying = () => {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "Hide now playing" : "Show now playing"}
-        className="group flex max-w-[260px] items-center gap-2.5 rounded-full border border-white/15 bg-black/70 px-4 py-2.5 backdrop-blur-xl transition-colors hover:border-primary"
+        className={`group flex max-w-[260px] items-center gap-2.5 rounded-full border border-white/15 bg-black/70 px-4 py-2.5 backdrop-blur-xl transition-colors hover:border-primary ${
+          playing ? "music-live" : ""
+        }`}
       >
         <span className="shrink-0">
           <Equalizer playing={playing} />
         </span>
         <span className="flex min-w-0 flex-col items-start">
-          <span className="text-[9px] font-bold uppercase tracking-[0.25em] text-muted-foreground">
+          <span className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.25em] text-muted-foreground">
+            {playing && <span className="music-dot" />}
             {playing ? "now playing" : data.from_recently_played ? "last played" : "music"}
           </span>
           <span className="max-w-[160px] truncate text-xs font-bold">

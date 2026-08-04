@@ -265,6 +265,61 @@ code {
     to { transform: rotate(360deg); }
 }
 
+/* Music widget: pulsing "live" glow on the pill while playing */
+.music-live {
+    animation: musicGlow 2.2s ease-in-out infinite;
+}
+@keyframes musicGlow {
+    0%, 100% { box-shadow: 0 0 10px hsl(var(--primary) / 0.25); }
+    50% { box-shadow: 0 0 22px hsl(var(--primary) / 0.7); }
+}
+
+/* Music widget: rotating vinyl ring on the card while playing.
+   Browsers without @property fall back to a static gradient ring. */
+@property --vinyl-angle {
+    syntax: "<angle>";
+    inherits: false;
+    initial-value: 0deg;
+}
+.music-vinyl::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    z-index: 0;
+    border-radius: inherit;
+    padding: 1.5px;
+    pointer-events: none;
+    background: conic-gradient(
+        from var(--vinyl-angle),
+        hsl(var(--primary)),
+        hsl(var(--secondary)),
+        hsl(var(--primary)) 50%,
+        hsl(var(--secondary)) 75%,
+        hsl(var(--primary)) 100%
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: vinylSpin 6s linear infinite;
+}
+@keyframes vinylSpin {
+    to { --vinyl-angle: 360deg; }
+}
+
+/* Music widget: pulsing "live" dot */
+.music-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: hsl(var(--primary));
+    box-shadow: 0 0 6px hsl(var(--primary) / 0.8);
+    animation: musicDotPulse 1.4s ease-in-out infinite;
+}
+@keyframes musicDotPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.6); }
+}
+
 /* AI assistant typing indicator */
 .ai-typing {
     display: inline-flex;
