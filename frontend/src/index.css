@@ -185,30 +185,16 @@ code {
         cursor: none !important;
     }
 }
-.custom-cursor-dot,
-.custom-cursor-ring {
+.custom-cursor-icon {
     position: fixed;
     top: 0;
     left: 0;
     z-index: 10001;
     pointer-events: none;
-    border-radius: 9999px;
+    color: hsl(var(--primary));
+    margin: -10px 0 0 -10px;
+    filter: drop-shadow(0 0 6px hsl(var(--primary) / 0.9));
     will-change: transform;
-}
-.custom-cursor-dot {
-    width: 8px;
-    height: 8px;
-    margin: -4px 0 0 -4px;
-    background: hsl(var(--primary));
-    box-shadow: 0 0 8px hsl(var(--primary) / 0.9);
-}
-.custom-cursor-ring {
-    width: 28px;
-    height: 28px;
-    margin: -14px 0 0 -14px;
-    border: 1px solid hsl(var(--secondary));
-    box-shadow: 0 0 10px hsl(var(--secondary) / 0.35), inset 0 0 6px hsl(var(--secondary) / 0.15);
-    transition: background-color 0.2s ease;
 }
 
 /* Music equalizer wave */

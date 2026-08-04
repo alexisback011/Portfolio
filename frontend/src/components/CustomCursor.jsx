@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, useMotionValue, useSpring } from "framer-motion";
+import { Sparkles } from "lucide-react";
 
 const INTERACTIVE =
   'a, button, input, textarea, select, label, [role="button"], [role="checkbox"], [role="switch"]';
@@ -58,23 +59,17 @@ const CustomCursor = () => {
   return (
     <>
       <motion.div
-        className="custom-cursor-dot"
-        style={{ x, y }}
-        animate={{
-          scale: pressed ? 0.5 : hovering ? 0.4 : 1,
-          opacity: hidden ? 0 : 1,
-        }}
-        transition={{ duration: 0.15 }}
-      />
-      <motion.div
-        className="custom-cursor-ring"
+        className="custom-cursor-icon"
         style={{ x: ringX, y: ringY }}
         animate={{
-          scale: pressed ? 0.85 : hovering ? 1.6 : 1,
+          scale: pressed ? 0.7 : hovering ? 1.5 : 1,
           opacity: hidden ? 0 : 1,
+          rotate: hovering ? 18 : 0,
         }}
         transition={{ duration: 0.2 }}
-      />
+      >
+        <Sparkles size={20} strokeWidth={1.75} />
+      </motion.div>
     </>
   );
 };
