@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, useMotionValue, useSpring } from "framer-motion";
-import { Sparkles } from "lucide-react";
+import { Plus } from "lucide-react";
 
 const INTERACTIVE =
   'a, button, input, textarea, select, label, [role="button"], [role="checkbox"], [role="switch"]';
@@ -88,7 +88,7 @@ const CustomCursor = () => {
         }}
         transition={{ duration: 0.2 }}
       >
-        <Sparkles size={20} strokeWidth={1.75} />
+        <Plus size={20} strokeWidth={1.75} />
       </motion.div>
     </>
   );
