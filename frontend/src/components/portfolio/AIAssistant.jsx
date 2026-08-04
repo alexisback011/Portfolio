@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Send, X } from "lucide-react";
+import { Bot, Send, X } from "lucide-react";
 import { API } from "../../lib/api";
 
 const HISTORY_KEY = "aiChatHistory";
@@ -107,7 +107,7 @@ const AIAssistant = () => {
             <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-black">
-                  <Sparkles size={15} />
+                  <Bot size={15} />
                 </span>
                 <div>
                   <p className="font-display text-xs font-black uppercase tracking-[0.15em]">
@@ -192,10 +192,10 @@ const AIAssistant = () => {
         className="group flex items-center gap-2.5 rounded-full border border-white/15 bg-black/70 px-4 py-2.5 backdrop-blur-xl transition-colors hover:border-primary"
       >
         <span className="shrink-0 text-primary">
-          <Sparkles size={15} />
+          <Bot size={15} />
         </span>
         <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground">
-          ask alex
+          ask me
         </span>
       </button>
     </div>
