@@ -184,19 +184,19 @@ const AIAssistant = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 320, damping: 22 }}
-            className="ai-card relative flex h-[460px] w-[340px] flex-col overflow-hidden rounded-2xl bg-black/80 backdrop-blur-xl md:w-[380px]"
+            className="flex h-[460px] w-[340px] flex-col overflow-hidden rounded-2xl border border-white/15 bg-black/80 backdrop-blur-xl md:w-[380px]"
           >
-            <div className="relative flex items-center justify-between overflow-hidden border-b border-white/10 px-4 py-3">
-              <span className="ai-aurora" aria-hidden="true" />
-              <div className="relative flex items-center gap-2.5">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary via-accent to-secondary text-black ring-1 ring-white/20">
+            <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-black">
                   <Bot size={15} />
                 </span>
                 <div>
                   <p className="font-display text-xs font-black uppercase tracking-[0.15em]">
                     Alexa
                   </p>
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                    <span className="music-dot" />
                     {typing ? "typing..." : "AI assistant · online"}
                   </p>
                 </div>
@@ -283,10 +283,10 @@ const AIAssistant = () => {
         onClick={() => setOpen((v) => !v)}
         onPointerDown={(e) => dragControls.start(e)}
         aria-label={open ? "Hide assistant" : "Ask Alex"}
-        className="ai-pill group relative flex items-center gap-2.5 rounded-full bg-black/80 px-4 py-2.5 backdrop-blur-xl transition-colors hover:border-primary"
+        className="group flex items-center gap-2.5 rounded-full border border-white/15 bg-black/70 px-4 py-2.5 backdrop-blur-xl transition-colors hover:border-primary"
       >
-        <span className="relative flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary via-accent to-secondary text-black">
-          <Bot size={12} />
+        <span className="shrink-0 text-primary">
+          <Bot size={15} />
         </span>
         <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground">
           ask me
