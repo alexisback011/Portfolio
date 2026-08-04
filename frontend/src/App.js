@@ -7,6 +7,7 @@ import useLenis from "@/hooks/useLenis";
 import { Nav } from "@/components/portfolio/Nav";
 import CustomCursor from "@/components/CustomCursor";
 import NowPlaying from "@/components/portfolio/NowPlaying";
+import AIAssistant from "@/components/portfolio/AIAssistant";
 import { Hero } from "@/components/portfolio/Hero";
 import { Manifesto } from "@/components/portfolio/Manifesto";
 import { MarqueeStrip } from "@/components/portfolio/MarqueeStrip";
@@ -70,6 +71,7 @@ function App() {
     <div className="App">
       <CustomCursor />
       <NowPlaying />
+      <AIAssistant />
       <Toaster
         theme="dark"
         position="bottom-right"

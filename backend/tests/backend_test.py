@@ -870,3 +870,87 @@ class TestNowPlaying:
                             lambda *a, **k: FakeResp())
         out = server._lastfm_now_playing()
         assert out == {"configured": True, "playing": False}
+
+
+# ---------- AI assistant ----------
+class TestAIChat:
+    def test_endpoint_shape(self, client):
+        # Deterministic when no key is configured (tests): returns
+        # configured:false without touching Gemini. With a key it must still
+        # be a well-formed payload.
+        import server
+        r = client.post(f"{BASE_URL}/api/ai/chat",
+                        json={"messages": [{"role": "user", "content": "hi"}]})
+        assert r.status_code == 200
+        data = r.json()
+        assert "configured" in data
+        if not server._ai_configured():
+            assert data == {"configured": False}
+
+    def test_chat_mocked(self, monkeypatch):
+        import json
+        import server
+        monkeypatch.setattr(server, "GEMINI_API_KEY", "test-key")
+
+        captured = {}
+
+        class FakeResp:
+            def raise_for_status(self):
+                pass
+
+            def json(self):
+                return {"candidates": [{
+                    "content": {"parts": [{"text": "Hi there!"}]},
+                }]}
+
+        def fake_post(url, **kwargs):
+            captured["url"] = url
+            captured["body"] = kwargs.get("json")
+            return FakeResp()
+
+        monkeypatch.setattr(server.requests, "post", fake_post)
+
+        class FakeReq:
+            class _Client:
+                host = "127.0.0.1"
+            client = _Client()
+
+        out = server.ai_chat(
+            server.ChatInput(messages=[
+                {"role": "user", "content": "hello"},
+                {"role": "assistant", "content": "hi"},
+            ]),
+            FakeReq(),
+        )
+        assert out.status_code == 200
+        assert json.loads(out.body) == {"reply": "Hi there!"}
+        assert captured["url"].endswith(":generateContent")
+        roles = [c["role"] for c in captured["body"]["contents"]]
+        assert roles == ["user", "model"]
+        assert captured["body"]["systemInstruction"]["parts"][0]["text"]
+
+    def test_upstream_error(self, monkeypatch):
+        import server
+        monkeypatch.setattr(server, "GEMINI_API_KEY", "test-key")
+
+        class Boom:
+            def raise_for_status(self):
+                raise requests.RequestException("boom")
+
+        monkeypatch.setattr(server.requests, "post",
+                            lambda *a, **k: Boom())
+
+        class FakeReq:
+            client = type("C", (), {"host": "127.0.0.1"})()
+
+        out = server.ai_chat(
+            server.ChatInput(messages=[{"role": "user", "content": "x"}]),
+            FakeReq(),
+        )
+        assert out.status_code == 502
+
+    def test_rate_limit(self):
+        import server
+        assert all(server._ai_allowed("203.0.113.9")
+                   for _ in range(server._AI_RATE_LIMIT))
+        assert not server._ai_allowed("203.0.113.9")

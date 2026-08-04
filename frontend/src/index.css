@@ -265,6 +265,31 @@ code {
     to { transform: rotate(360deg); }
 }
 
+/* AI assistant typing indicator */
+.ai-typing {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.ai-typing i {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: hsl(var(--primary));
+    box-shadow: 0 0 6px hsl(var(--primary) / 0.6);
+    animation: aiBlink 1.2s ease-in-out infinite;
+}
+.ai-typing i:nth-child(2) {
+    animation-delay: 0.15s;
+}
+.ai-typing i:nth-child(3) {
+    animation-delay: 0.3s;
+}
+@keyframes aiBlink {
+    0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+    40% { opacity: 1; transform: translateY(-3px); }
+}
+
 /* Dashboard scope: calm modern-minimal overrides so the public site's
    flat neon tokens (radius 0, violet accent) stay untouched. Applied to the
    dashboard wrapper and any portal surface (dialogs, sheets, menus). */

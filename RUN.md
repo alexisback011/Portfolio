@@ -137,6 +137,36 @@ Notes:
 
 ---
 
+## AI assistant (Google Gemini)
+
+The floating "Ask Alex" chat bubble (`POST /api/ai/chat`) is a concierge
+chatbot that answers questions about Alex and the site. It's backed by
+Google's Gemini free tier, so it costs nothing at portfolio scale.
+
+1. Create a free API key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+   (any Google account works; copy the API key once it's generated).
+2. Add one env var:
+   - `backend/.env` (local dev):
+     ```
+     GEMINI_API_KEY=...
+     ```
+   - The Render service env vars (for production, same name).
+3. Restart the backend / redeploy. The bubble appears bottom-right with a
+   "Ask Alex" button. It hides entirely if the key is missing.
+
+Notes:
+
+- The API key stays server-side; the browser only ever calls your own
+  `/api/ai/chat` endpoint.
+- The model defaults to `gemini-2.0-flash`; override with an `AI_MODEL` env var
+  if you ever want a different one.
+- The endpoint is public, so it's lightly rate-limited per visitor (10
+  messages/minute) to protect your free quota.
+- If the key is missing, `GET /api/ai/chat` returns `{"configured": false}`
+  and the widget hides.
+
+---
+
 ## Deployment
 
 The backend is plain FastAPI + SQLAlchemy and runs anywhere Python (or Docker)

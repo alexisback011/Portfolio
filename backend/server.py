@@ -290,6 +290,13 @@ LASTFM_API_KEY = os.environ.get("LASTFM_API_KEY", "").strip()
 LASTFM_USERNAME = os.environ.get("LASTFM_USERNAME", "").strip()
 
 
+# ---- AI assistant ----
+# Site concierge chatbot backed by Google Gemini. The free tier is enough for
+# a portfolio. Setup: see RUN.md. Needs a Gemini API key (server-side only).
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
+AI_MODEL = os.environ.get("AI_MODEL", "gemini-2.0-flash").strip()
+
+
 def is_admin_email(email: str) -> bool:
     configured = os.environ.get("ADMIN_EMAIL", "").strip().lower()
     return bool(configured) and email.lower() == configured
@@ -1467,6 +1474,114 @@ def now_playing():
     payload = _lastfm_now_playing()
     return Response(content=json.dumps(payload), media_type="application/json",
                     headers={"Cache-Control": "no-store"})
+
+
+# ---------- AI assistant ----------
+_AI_URL = "https://generativelanguage.googleapis.com/v1beta/models"
+_AI_SYSTEM_PROMPT = (
+    "You are ALEXA, the friendly AI concierge for Alex's personal portfolio website. "
+    "Answer warmly, helpfully and in a few concise sentences. You know the following:\n"
+    "- Name: ALEX. A creative engineer from India who works remote.\n"
+    "- Tagline: developer & content creator — builds software by day, turns the process into videos, devlogs and edits by night.\n"
+    "- Skills: C, C++, Python, JavaScript, TypeScript, React, Next.js, Node.js, MongoDB, SQL, HTML, CSS, graphic design and video editing.\n"
+    "- Projects on the site: DEV DIARIES (weekly devlogs and coding tutorials), GAME NIGHTS (gaming content), OPEN SOURCE (reusable tools and components), ANIME EDITS (AMVs).\n"
+    "- Site sections: Hero, About, Projects, Skills, Reviews and Contact.\n"
+    "- Contact email: alexisback011@gmail.com. Socials: YouTube and Instagram @alexisback011.\n"
+    "- Visitors can leave a review and send messages through the site's contact form.\n"
+    "If asked something you do not know, say so and suggest using the contact form or emailing Alex. "
+    "Keep replies short and on-brand.\n"
+)
+_AI_RATE_LIMIT = 10
+_ai_rate = {}
+_ai_rate_lock = threading.Lock()
+
+
+def _ai_configured() -> bool:
+    return bool(GEMINI_API_KEY)
+
+
+def _ai_allowed(ip: str) -> bool:
+    now = time.time()
+    with _ai_rate_lock:
+        hits = [t for t in _ai_rate.get(ip, []) if now - t < 60]
+        if len(hits) >= _AI_RATE_LIMIT:
+            return False
+        hits.append(now)
+        _ai_rate[ip] = hits
+        if len(_ai_rate) > 2000:
+            cutoff = now - 60
+            fresh = {k: v for k, v in _ai_rate.items() if v and v[-1] > cutoff}
+            _ai_rate.clear()
+            _ai_rate.update(fresh)
+    return True
+
+
+class ChatInput(BaseModel):
+    messages: List[dict] = Field(default_factory=list, max_length=40)
+
+
+@api_router.get("/ai/chat")
+def ai_chat_status():
+    return Response(content=json.dumps({"configured": _ai_configured()}),
+                    media_type="application/json",
+                    headers={"Cache-Control": "no-store"})
+
+
+@api_router.post("/ai/chat")
+def ai_chat(payload: ChatInput, request: Request):
+    if not _ai_configured():
+        return Response(content=json.dumps({"configured": False}),
+                        media_type="application/json",
+                        headers={"Cache-Control": "no-store"})
+    ip = request.client.host if request.client else "unknown"
+    if not _ai_allowed(ip):
+        return Response(content=json.dumps({"error": "rate_limited"}),
+                        status_code=429, media_type="application/json")
+    try:
+        contents = []
+        for m in payload.messages[-20:]:
+            role = "model" if m.get("role") == "assistant" else "user"
+            text = str(m.get("content", ""))[:2000]
+            if text:
+                contents.append({"role": role, "parts": [{"text": text}]})
+        if not contents:
+            return Response(content=json.dumps({"error": "empty"}), status_code=422,
+                            media_type="application/json")
+        resp = requests.post(
+            f"{_AI_URL}/{AI_MODEL}:generateContent",
+            params={"key": GEMINI_API_KEY},
+            json={
+                "contents": contents,
+                "systemInstruction": {"parts": [{"text": _AI_SYSTEM_PROMPT}]},
+                "generationConfig": {
+                    "temperature": 0.7,
+                    "maxOutputTokens": 512,
+                    "topP": 0.95,
+                },
+            },
+            headers={"Content-Type": "application/json"},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        candidates = data.get("candidates") or []
+        if not candidates:
+            return Response(content=json.dumps({"error": "empty_reply"}),
+                            status_code=502, media_type="application/json")
+        parts = candidates[0].get("content", {}).get("parts") or []
+        reply = "".join(p.get("text", "") for p in parts).strip()
+        if not reply:
+            return Response(content=json.dumps({"error": "empty_reply"}),
+                            status_code=502, media_type="application/json")
+        return Response(content=json.dumps({"reply": reply}),
+                        media_type="application/json",
+                        headers={"Cache-Control": "no-store"})
+    except requests.RequestException:
+        return Response(content=json.dumps({"error": "upstream"}),
+                        status_code=502, media_type="application/json")
+    except Exception:
+        return Response(content=json.dumps({"error": "internal"}),
+                        status_code=500, media_type="application/json")
 
 
 app.include_router(api_router)
