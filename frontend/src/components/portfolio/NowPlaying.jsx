@@ -53,7 +53,7 @@ const NowPlaying = () => {
     const w = Math.max(el.offsetWidth, cardRef.current?.offsetWidth || 0, 280);
     const h = Math.max(el.offsetHeight, cardRef.current?.offsetHeight || 0, 420);
     const m = 20;
-    const nx = Math.min(m, Math.max(-(vw - w - m), dragX.get()));
+    const nx = Math.min(vw - w - m, Math.max(-m, dragX.get()));
     const ny = Math.min(m, Math.max(-(vh - h - m), dragY.get()));
     dragX.set(nx);
     dragY.set(ny);
@@ -125,7 +125,7 @@ const NowPlaying = () => {
       dragMomentum={false}
       dragElastic={0}
       onDragEnd={() => clampDrag(true)}
-      className="fixed bottom-5 right-5 z-[90] flex cursor-grab flex-col items-end gap-2 active:cursor-grabbing"
+      className="fixed bottom-5 left-5 z-[90] flex cursor-grab flex-col items-end gap-2 active:cursor-grabbing"
     >
       <AnimatePresence>
         {open && (
