@@ -42,7 +42,6 @@ import EmptyState from "./EmptyState";
 import ConfirmDialog from "./ConfirmDialog";
 import SignupsChart from "./charts/SignupsChart";
 import RatingsChart from "./charts/RatingsChart";
-import AppDownloadCard from "./AppDownloadCard";
 import ReviewCrown from "../ReviewCrown";
 
 const fmtDate = (v) => (v ? new Date(v).toLocaleDateString() : "—");
@@ -851,25 +850,6 @@ const AdminDashboard = ({ page, onNavigate }) => {
       </div>
     );
   }
-
-  if (page === "app") {
-    return (
-      <div className="mx-auto w-full">
-        <PageHeader
-          eyebrow="App"
-          title="Android App"
-          description="Download the Alexシ Android app to manage the portfolio from your phone."
-        />
-        <div className="mt-8 max-w-2xl">
-          <AppDownloadCard />
-        </div>
-      </div>
-    );
-  }
-
-  const recentUsers = [...users]
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    .slice(0, 5);
 
   return (
     <div className="mx-auto w-full max-w-6xl">

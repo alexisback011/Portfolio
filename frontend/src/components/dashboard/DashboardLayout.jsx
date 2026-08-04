@@ -13,7 +13,6 @@ import {
   LogOut,
   ExternalLink,
   ChevronDown,
-  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -67,13 +66,6 @@ const buildAdminNav = () => [
   },
 ];
 
-const buildAppNav = () => [
-  {
-    label: "App",
-    items: [{ key: "app", label: "App Download", icon: Download, testId: "tab-app" }],
-  },
-];
-
 const DashboardLayout = ({ user, isAdmin, page, onNavigate, hideReviews, children }) => {
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -89,7 +81,6 @@ const DashboardLayout = ({ user, isAdmin, page, onNavigate, hideReviews, childre
     isAdmin
       ? [
           { label: "Admin", items: buildAdminNav()[0].items },
-          ...buildAppNav(),
           { label: "Account", items: buildNav(true, hideReviews) },
         ]
       : [{ label: "Account", items: buildNav(false, hideReviews) }]
