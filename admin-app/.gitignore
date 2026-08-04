@@ -1,0 +1,14 @@
+# Expo
+.expo/
+dist/
+web-build/
+*.orig.*
+.expo-shared/
+
+# Native
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision

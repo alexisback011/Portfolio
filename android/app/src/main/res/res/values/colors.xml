@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- dashboard scope: index.css .dashboard overrides -->
+    <color name="bg">#0A0A0A</color>
+    <color name="card">#0F0F0F</color>
+    <color name="card_soft">#17171C</color>
+    <color name="popover">#141414</color>
+    <color name="fg">#FAFAFA</color>
+    <color name="muted">#212121</color>
+    <color name="muted_alt">#262626</color>
+    <color name="dim">#ADADAD</color>
+    <color name="secondary">#3D3D3D</color>
+    <color name="input">#2E2E2E</color>
+    <color name="line">#2B2B2B</color>
+    <color name="primary">#FF0055</color>
+    <color name="primary_dark">#C40040</color>
+    <color name="danger">#EF4343</color>
+    <color name="ok">#34D399</color>
+
+    <!-- public site theme: index.css :root (login page / preloader) -->
+    <color name="fg_soft">#9E9E9E</color>
+    <color name="cyan">#00FFFF</color>
+    <color name="violet">#7A00FF</color>
+
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+    <color name="transparent">#00000000</color>
+</resources>

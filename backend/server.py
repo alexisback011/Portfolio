@@ -4,6 +4,10 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
+APK_VERSION = "1.0.8"
+APK_FILE = ROOT_DIR / "AlexAdmin.apk"
+PANEL_FILE = ROOT_DIR / "index.html"
+
 import os
 import base64
 import asyncio
@@ -25,6 +29,7 @@ import bcrypt
 import jwt
 import requests
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from sqlalchemy import String, Integer, Boolean, DateTime, Text, select, text, delete
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -1384,6 +1389,26 @@ async def delete_otp(otp_id: int, admin=Depends(require_admin), db: AsyncSession
     await db.delete(rec)
     await db.commit()
     return {"message": "OTP record deleted"}
+
+
+@api_router.get("/apk/version")
+async def apk_version(request: Request):
+    base = str(request.base_url).rstrip("/")
+    return {"version": APK_VERSION, "apk_url": base + "/api/apk/download"}
+
+
+@api_router.get("/apk/download")
+async def apk_download():
+    if not APK_FILE.exists():
+        raise HTTPException(status_code=404, detail="APK not available")
+    return FileResponse(APK_FILE, media_type="application/vnd.android.package-archive", filename="AlexAdmin.apk")
+
+
+@api_router.get("/admin/app", response_class=HTMLResponse)
+async def admin_app():
+    if not PANEL_FILE.exists():
+        raise HTTPException(status_code=404, detail="Admin panel not available")
+    return HTMLResponse(PANEL_FILE.read_text(encoding="utf-8"))
 
 
 # ---------- Last.fm "now playing" ----------

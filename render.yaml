@@ -80,6 +80,14 @@ services:
           name: alex-portfolio-api
           property: host
 
+  - type: web
+    name: alex-admin-panel
+    runtime: static
+    plan: free
+    rootDir: admin
+    staticPublishPath: .
+    pullRequestPreviewsEnabled: false
+
 databases:
   - name: alex-portfolio-db
     plan: free

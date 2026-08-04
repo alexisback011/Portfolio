@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ALEX. Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700;800&family=Unbounded:wght@500;700;900&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #050507;
+    --card: rgba(255,255,255,.02);
+    --card-solid: #0b0b0e;
+    --line: rgba(255,255,255,.08);
+    --line-strong: rgba(255,255,255,.16);
+    --fg: #f5f5f7;
+    --muted: #9ca3af;
+    --dim: #6b7280;
+    --primary: #ff0059;
+    --secondary: #00ffff;
+    --danger: #f87171;
+    --ok: #34d399;
+    --radius: 14px;
+    --glow-p: 0 0 24px rgba(255,0,89,.25);
+    --glow-s: 0 0 24px rgba(0,255,255,.2);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background:
+      radial-gradient(1000px 500px at 80% -10%, rgba(255,0,89,.08), transparent 60%),
+      radial-gradient(900px 500px at 0% 110%, rgba(0,255,255,.06), transparent 60%),
+      var(--bg);
+    color: var(--fg);
+    font-family: 'JetBrains Mono', monospace;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #222; border-radius: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 20px 20px calc(28px + env(safe-area-inset-bottom)); }
+
+  /* header */
+  header {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 18px 0 16px; border-bottom: 1px solid var(--line-strong); margin-bottom: 24px;
+  }
+  .brand { display: flex; align-items: center; min-width: 0; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .whoami-pill {
+    font-size: 10px; letter-spacing: 1px; color: var(--muted); border: 1px solid var(--line);
+    padding: 9px 12px; border-radius: 999px; max-width: 46vw;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .whoami-pill b { color: var(--secondary); font-weight: 700; }
+  .logo { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 20px; letter-spacing: 1px; text-transform: uppercase; position: relative; display: inline-block; animation: logo-flicker 4.5s infinite; }
+  .logo .dot { color: var(--primary); }
+  .logo::before,
+  .logo::after {
+    content: attr(data-text);
+    position: absolute; left: 0; top: 0; width: 100%; overflow: hidden;
+    pointer-events: none; z-index: 2;
+  }
+  .logo::before { color: var(--primary); text-shadow: -2px 0 var(--primary); animation: glitch-slice 3.2s infinite linear; }
+  .logo::after { color: var(--secondary); text-shadow: 2px 0 var(--secondary); animation: glitch-slice 2.7s infinite linear reverse; }
+  @keyframes logo-flicker {
+    0%, 96.4%, 100% { opacity: 1; text-shadow: none; }
+    96.6% { opacity: .55; text-shadow: 2px 0 var(--primary), -2px 0 var(--secondary); }
+    96.8% { opacity: 1; text-shadow: none; }
+    97.2% { opacity: .7; transform: translateX(1px); }
+    97.6% { opacity: 1; transform: none; }
+    98% { opacity: .75; }
+    98.4% { opacity: 1; }
+  }
+  @keyframes glitch-slice {
+    0%, 87%, 100% { clip-path: inset(0 0 100% 0); transform: none; opacity: 0; }
+    88% { clip-path: inset(15% 0 62% 0); transform: translate(-3px, -1px); opacity: .85; }
+    89% { clip-path: inset(48% 0 33% 0); transform: translate(3px, 1px); opacity: .85; }
+    90% { clip-path: inset(72% 0 8% 0); transform: translate(-2px, 2px); opacity: .85; }
+    91% { clip-path: inset(8% 0 78% 0); transform: translate(2px, -2px); opacity: .85; }
+    92% { clip-path: inset(38% 0 44% 0); transform: translate(-4px, 1px); opacity: .85; }
+    93%, 100% { clip-path: inset(0 0 100% 0); transform: none; opacity: 0; }
+  }
+  .badge {
+    font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--secondary);
+    border: 1px solid var(--line); padding: 5px 9px; margin-left: 10px; vertical-align: middle; border-radius: 999px;
+  }
+  .btn {
+    font-family: inherit; cursor: pointer; font-weight: 700; font-size: 11px;
+    letter-spacing: 2px; text-transform: uppercase; border: 1px solid transparent; padding: 12px 18px;
+    background: var(--primary); color: #000; border-radius: 10px; min-height: 40px;
+    transition: background .2s, color .2s, border-color .2s, box-shadow .2s, transform .1s;
+  }
+  .btn:hover { background: var(--secondary); box-shadow: var(--glow-s); }
+  .btn:active { transform: scale(.97); }
+  .btn-ghost { background: transparent; color: var(--muted); border-color: var(--line); }
+  .btn-ghost:hover { background: rgba(255,255,255,.03); color: var(--fg); border-color: var(--primary); box-shadow: none; }
+  a.btn { text-decoration: none; display: inline-flex; align-items: center; }
+  .btn-danger { background: transparent; color: var(--danger); border: 1px solid rgba(248,113,113,.35); }
+  .btn-danger:hover { background: rgba(248,113,113,.12); color: var(--danger); border-color: var(--danger); box-shadow: none; }
+  .btn-sm { padding: 8px 12px; font-size: 9px; min-height: 32px; border-radius: 8px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .like-btn {
+    font-family: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+    background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 8px;
+    padding: 8px 12px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    min-height: 32px; transition: color .2s, border-color .2s, box-shadow .2s, transform .1s;
+  }
+  .like-btn:hover { color: var(--primary); border-color: var(--primary); box-shadow: var(--glow-p); }
+  .like-btn:active { transform: scale(.95); }
+  .like-btn.liked { color: var(--primary); border-color: rgba(255,0,89,.5); background: rgba(255,0,89,.08); }
+  .like-btn .heart { font-size: 14px; line-height: 1; }
+  .icon-btn {
+    font-family: inherit; cursor: pointer; width: 40px; height: 40px; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 10px;
+    font-size: 16px; transition: color .2s, border-color .2s, box-shadow .2s;
+  }
+  .icon-btn:hover { color: var(--secondary); border-color: var(--secondary); box-shadow: var(--glow-s); }
+  .icon-btn.spin { animation: spin .6s linear; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* login */
+  .login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+  .login-card {
+    width: 100%; max-width: 380px; padding: 36px 32px; border-radius: var(--radius);
+    background: var(--card-solid); border: 1px solid var(--line-strong);
+    box-shadow: 0 20px 60px rgba(0,0,0,.5), var(--glow-p);
+  }
+  .login-card h1 { font-family: 'Unbounded', sans-serif; font-size: 26px; text-transform: uppercase; letter-spacing: -1px; margin-bottom: 8px; }
+  .login-card p { color: var(--muted); font-size: 13px; margin-bottom: 28px; line-height: 1.6; }
+  label { display: block; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 22px; }
+  input {
+    width: 100%; margin-top: 8px; background: rgba(255,255,255,.03); border: 1px solid var(--line);
+    border-radius: 10px; color: var(--fg); font-family: inherit; font-size: 15px; font-weight: 300;
+    padding: 12px 14px; outline: none; transition: border-color .2s, box-shadow .2s;
+  }
+  input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(255,0,89,.12); }
+  .err { color: var(--danger); font-size: 12px; margin-top: 14px; min-height: 16px; }
+  .login-card .btn { width: 100%; margin-top: 8px; }
+  .login-foot { margin-top: 24px; display: flex; justify-content: space-between; gap: 10px; font-size: 10px; color: var(--dim); letter-spacing: 1px; text-transform: uppercase; }
+
+  /* tabs */
+  .tabs {
+    display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; margin-bottom: 20px;
+    margin-left: -20px; margin-right: -20px; padding-left: 20px; padding-right: 20px;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    font-family: inherit; cursor: pointer; white-space: nowrap; background: transparent; color: var(--muted);
+    border: 1px solid var(--line); border-radius: 999px; padding: 11px 16px; font-size: 11px; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase; transition: all .2s; min-height: 40px;
+  }
+  .tab.active { background: var(--primary); color: #000; border-color: var(--primary); box-shadow: var(--glow-p); }
+  .tab .count { margin-left: 8px; opacity: .7; }
+
+  /* database overview */
+  .overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 10px; margin-bottom: 22px; }
+  .stat {
+    font-family: inherit; cursor: pointer; text-align: left; position: relative; overflow: hidden;
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px;
+    transition: border-color .2s, transform .2s, background .2s;
+  }
+  .stat::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--stat-accent, var(--primary)); opacity: 0; transition: opacity .2s; }
+  .stat:hover { border-color: var(--stat-accent, var(--primary)); transform: translateY(-1px); }
+  .stat.active { border-color: var(--stat-accent, var(--primary)); background: rgba(255,255,255,.04); }
+  .stat.active::before { opacity: 1; }
+  .stat[data-tab="profiles"] { --stat-accent: var(--primary); }
+  .stat[data-tab="reviews"] { --stat-accent: #facc15; }
+  .stat[data-tab="messages"] { --stat-accent: #60a5fa; }
+  .stat[data-tab="logins"] { --stat-accent: var(--secondary); }
+  .stat[data-tab="otps"] { --stat-accent: #c084fc; }
+  .stat-ico { position: absolute; top: 12px; right: 12px; color: var(--stat-accent); opacity: .9; display: inline-flex; }
+  .stat-num { display: block; font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 22px; color: var(--fg); line-height: 1; margin-top: 8px; }
+  .stat.active .stat-num { color: var(--stat-accent); }
+  .stat-label { display: block; margin-top: 6px; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+  .stat-label .sig { color: var(--stat-accent); }
+
+  .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+  .toolbar h2 { font-family: 'Unbounded', sans-serif; font-size: 15px; text-transform: uppercase; letter-spacing: 1px; }
+  .toolbar .sub { font-size: 10px; color: var(--dim); margin-top: 4px; letter-spacing: 1px; }
+
+  /* cards */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+  .card {
+    border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); overflow: hidden;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .card:hover { border-color: var(--line-strong); box-shadow: 0 10px 40px rgba(0,0,0,.4); }
+  .card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 16px 16px 12px; }
+  .who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .avatar {
+    width: 42px; height: 42px; border-radius: 12px; border: 1px solid var(--line-strong); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+    font-family: 'Unbounded', sans-serif; font-weight: 900; color: var(--primary); background: rgba(255,0,89,.08); font-size: 16px;
+  }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .name { font-family: 'Unbounded', sans-serif; font-weight: 700; text-transform: uppercase; font-size: 12px; letter-spacing: .5px; }
+  .crown { display: inline-block; vertical-align: middle; margin-left: 4px; line-height: 0; animation: crownSway 2s ease-in-out infinite; }
+  .crown svg { display: block; }
+  .crown.r1 { color: #FFE55C; filter: drop-shadow(0 0 5px rgba(255,229,92,.9)); }
+  .crown.r2 { color: #EAEAEA; filter: drop-shadow(0 0 5px rgba(234,234,234,.8)); }
+  .crown.r3 { color: #F0A35E; filter: drop-shadow(0 0 5px rgba(240,163,94,.85)); }
+  @keyframes crownSway { 0%,100% { transform: rotate(-8deg) translateY(0); } 50% { transform: rotate(-2deg) translateY(-1.5px); } }
+  .meta { font-size: 11px; color: var(--muted); margin-top: 3px; word-break: break-all; }
+  .role { font-size: 9px; letter-spacing: 2px; font-weight: 700; padding: 2px 6px; border-radius: 999px; border: 1px solid var(--line); }
+  .role.admin { color: var(--primary); border-color: rgba(255,0,89,.4); background: rgba(255,0,89,.08); }
+  .role.user { color: var(--secondary); border-color: rgba(0,255,255,.35); background: rgba(0,255,255,.07); }
+  .chip { font-size: 9px; letter-spacing: 2px; font-weight: 700; padding: 3px 7px; border: 1px solid rgba(248,113,113,.4); color: var(--danger); text-transform: uppercase; border-radius: 999px; background: rgba(248,113,113,.08); }
+  .chip-verified { border-color: rgba(52,211,153,.4); color: #34d399; background: rgba(52,211,153,.08); }
+  .status { font-size: 9px; letter-spacing: 2px; font-weight: 700; text-transform: uppercase; }
+  .status.used { color: var(--primary); }
+  .status.expired { color: var(--danger); }
+  .status.active { color: var(--secondary); }
+  .purpose { font-size: 9px; letter-spacing: 2px; font-weight: 700; padding: 3px 7px; border: 1px solid var(--line-strong); color: var(--secondary); text-transform: uppercase; border-radius: 999px; }
+  .card-body { padding: 0 16px 16px; }
+  .stars { color: var(--primary); letter-spacing: 2px; font-size: 14px; }
+  .txt { font-size: 13px; color: var(--muted); font-weight: 300; line-height: 1.6; margin-top: 8px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .link { color: var(--secondary); font-size: 12px; text-decoration: none; }
+  .link:hover { color: var(--primary); }
+  .subrow { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-top: 1px solid rgba(255,255,255,.04); font-size: 11px; color: var(--muted); }
+  .subrow code { font-size: 10px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
+  .subrow .grow { flex: 1; min-width: 0; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .toggle {
+    width: 100%; text-align: left; background: none; border: none; border-top: 1px solid rgba(255,255,255,.04);
+    color: var(--muted); font-family: inherit; font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    padding: 12px 16px; cursor: pointer; font-weight: 700; transition: color .2s;
+  }
+  .toggle:hover { color: var(--primary); }
+  .logins { border-top: 1px solid rgba(255,255,255,.04); padding: 14px 16px; max-height: 200px; overflow: auto; }
+  .login-item { font-size: 11px; color: var(--muted); margin-bottom: 12px; }
+  .login-item .ip { color: var(--secondary); }
+  .login-item .when { color: var(--dim); font-size: 10px; margin-top: 2px; }
+  .login-item .ua { color: #555; font-size: 10px; margin-top: 2px; word-break: break-all; }
+
+  .empty { color: var(--dim); font-size: 13px; padding: 40px 0; text-align: center; letter-spacing: 1px; }
+  .empty::before { content: "\221E"; display: block; font-size: 26px; color: var(--line-strong); margin-bottom: 12px; font-family: 'Unbounded', sans-serif; }
+  .skel { position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); height: 132px; }
+  .skel::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255,255,255,.05), transparent); animation: shimmer 1.5s infinite; }
+  @keyframes shimmer { 100% { transform: translateX(100%); } }
+
+  /* toast */
+  .toasts { position: fixed; top: 16px; right: 16px; z-index: 999; display: flex; flex-direction: column; gap: 10px; max-width: min(340px, calc(100vw - 32px)); }
+  .toast {
+    background: var(--card-solid); border: 1px solid var(--line-strong); border-left: 3px solid var(--secondary);
+    color: var(--fg); font-size: 12px; padding: 12px 16px; border-radius: 10px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.55); animation: slide .25s ease;
+  }
+  .toast.error { border-left-color: var(--danger); }
+  @keyframes slide { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: none; } }
+
+  .hidden { display: none !important; }
+  .update-bar {
+    display: none; align-items: center; justify-content: space-between; gap: 12px;
+    background: linear-gradient(90deg, rgba(255,0,89,.15), rgba(0,255,255,.1)), var(--card-solid);
+    border-bottom: 1px solid var(--primary); padding: 12px 16px; font-size: 11px; letter-spacing: 1px;
+    position: sticky; top: 0; z-index: 500;
+  }
+  .update-bar.show { display: flex; }
+  .update-bar .up-text { color: var(--muted); }
+  .update-bar .up-text b { color: var(--secondary); font-weight: 700; }
+
+  .foot {
+    margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
+    display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+    font-size: 10px; color: var(--dim); letter-spacing: 1px; text-transform: uppercase;
+  }
+  .foot .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+  .foot.ok .dot { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+  .foot.bad .dot { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+
+  @media (max-width: 640px) {
+    .grid { grid-template-columns: 1fr; }
+    header { flex-wrap: wrap; }
+    .whoami-pill { order: 3; flex-basis: 100%; max-width: none; text-align: center; }
+  }
+</style>
+</head>
+<body>
+  <div class="update-bar" id="updateBar">
+    <div class="up-text" id="updateText"></div>
+    <button class="btn btn-sm" id="updateBtn">Update</button>
+  </div>
+  <div class="toasts" id="toasts"></div>
+
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <h1>ALEX.<span style="color:var(--primary)">ADMIN</span></h1>
+      <p>Authorized personnel only. Sign in with an admin account to manage the platform.</p>
+      <form id="loginForm">
+        <label>
+          Email
+          <input type="email" id="email" autocomplete="username" required />
+        </label>
+        <label>
+          Password
+          <input type="password" id="password" autocomplete="current-password" required />
+        </label>
+        <div class="err" id="loginErr"></div>
+        <button class="btn" type="submit" id="loginBtn">Sign In</button>
+      </form>
+      <div class="login-foot">
+        <span>Alex Panel</span>
+        <span>v1.0.6</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="app" class="hidden">
+    <div class="wrap">
+      <header>
+        <div class="brand">
+          <span class="logo" data-text="ALEX">ALEX<span class="dot">.</span></span>
+          <span class="badge">Admin Panel</span>
+        </div>
+        <div class="header-right">
+          <span class="whoami-pill" id="whoami"></span>
+          <button class="icon-btn" id="refreshBtn" title="Refresh now" aria-label="Refresh now">&#x21BB;</button>
+          <button class="btn btn-ghost btn-sm" id="logoutBtn">Logout</button>
+        </div>
+      </header>
+
+      <div class="overview" id="overview">
+        <button class="stat active" data-tab="profiles"><span class="stat-ico">&#x1F464;</span><span class="stat-num" id="ovProfiles">–</span><span class="stat-label">Profiles</span></button>
+        <button class="stat" data-tab="reviews"><span class="stat-ico">&#x2605;</span><span class="stat-num" id="ovReviews">–</span><span class="stat-label">Reviews</span></button>
+        <button class="stat" data-tab="messages"><span class="stat-ico">&#x2709;</span><span class="stat-num" id="ovMessages">–</span><span class="stat-label">Messages</span></button>
+        <button class="stat" data-tab="logins"><span class="stat-ico">&#x1F511;</span><span class="stat-num" id="ovLogins">–</span><span class="stat-label">Logins</span></button>
+        <button class="stat" data-tab="otps"><span class="stat-ico">&#x25C8;</span><span class="stat-num" id="ovOtps">–</span><span class="stat-label">OTP <span class="sig">Codes</span></span></button>
+      </div>
+
+      <div class="tabs" id="tabs">
+        <button class="tab active" data-tab="profiles">Profiles <span class="count" id="cntProfiles">–</span></button>
+        <button class="tab" data-tab="messages">Messages <span class="count" id="cntMessages">–</span></button>
+        <button class="tab" data-tab="reviews">Reviews <span class="count" id="cntReviews">–</span></button>
+        <button class="tab" data-tab="logins">Logins <span class="count" id="cntLogins">–</span></button>
+        <button class="tab" data-tab="otps">OTP <span class="count" id="cntOtps">–</span></button>
+      </div>
+
+      <div id="panel"></div>
+
+      <div class="foot" id="foot">
+        <span>Alex Admin Panel</span>
+        <span>Synced <span class="dot"></span><span id="footTime">–</span></span>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  var DEFAULT_API = "https://portfolio-a6in.onrender.com/api";
+  function resolveApi() {
+    try {
+      var p = new URLSearchParams(window.location.search).get("api");
+      if (p) { localStorage.setItem("alex_admin_api", p); return p.replace(/\/$/, ""); }
+    } catch (e) {}
+    return (localStorage.getItem("alex_admin_api") || DEFAULT_API).replace(/\/$/, "");
+  }
+  var API = resolveApi();
+
+  var $ = function (id) { return document.getElementById(id); };
+  var state = { tab: "profiles", users: [], messages: [], reviews: [], logins: [], otps: [], expanded: {}, loaded: {} };
+
+  function toast(msg, isError) {
+    var t = document.createElement("div");
+    t.className = "toast" + (isError ? " error" : "");
+    t.textContent = msg;
+    $("toasts").appendChild(t);
+    setTimeout(function () { t.remove(); }, 3200);
+  }
+
+  function apiError(e) {
+    var d = e && e.detail;
+    if (Array.isArray(d)) { return d.map(function (x) { return x.msg; }).join(" "); }
+    if (typeof d === "string") { return d.charAt(0).toUpperCase() + d.slice(1); }
+    if (e && e.msg) return e.msg;
+    return "Something went wrong.";
+  }
+
+  function doReq(method, path, body) {
+    return fetch(API + path, {
+      method: method,
+      credentials: "include",
+      headers: body ? { "Content-Type": "application/json" } : undefined,
+      body: body ? JSON.stringify(body) : undefined
+    }).then(function (r) {
+      return r.json().catch(function () { return null; }).then(function (data) {
+        if (!r.ok) { var err = new Error(apiError(data || {})); err.status = r.status; err.data = data || {}; throw err; }
+        return data;
+      });
+    });
+  }
+
+  var refreshing = null;
+  function tryRefresh() {
+    if (refreshing) return refreshing;
+    refreshing = fetch(API + "/auth/refresh", {
+      method: "POST",
+      credentials: "include"
+    }).then(function (r) { return r.ok; })
+      .catch(function () { return false; })
+      .finally(function () { refreshing = null; });
+    return refreshing;
+  }
+
+  function req(method, path, body) {
+    return doReq(method, path, body).then(null, function (err) {
+      if (err.status === 401) {
+        return tryRefresh().then(function (ok) {
+          if (ok) return doReq(method, path, body);
+          throw err;
+        });
+      }
+      throw err;
+    });
+  }
+
+  /* ---------- auth ---------- */
+  $("loginForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var btn = $("loginBtn");
+    btn.disabled = true;
+    btn.textContent = "Signing in...";
+    $("loginErr").textContent = "";
+    req("POST", "/auth/login", { email: $("email").value.trim(), password: $("password").value })
+      .then(function (data) {
+        if (data.role !== "admin") throw { status: 403, detail: "This account is not an admin." };
+        enter(data);
+      })
+      .catch(function (err) { $("loginErr").textContent = err.status === 403 ? "This account is not an admin." : apiError(err); })
+      .finally(function () { btn.disabled = false; btn.textContent = "Sign In"; });
+  });
+
+  $("logoutBtn").addEventListener("click", function () {
+    req("POST", "/auth/logout").catch(function () {}).finally(function () {
+      localStorage.removeItem("alex_admin_api");
+      location.reload();
+    });
+  });
+
+  $("refreshBtn").addEventListener("click", function () {
+    var b = $("refreshBtn");
+    b.classList.remove("spin");
+    void b.offsetWidth;
+    b.classList.add("spin");
+    setTimeout(function () { b.classList.remove("spin"); }, 700);
+    load(state.tab);
+  });
+
+  function enter(me) {
+    $("loginScreen").classList.add("hidden");
+    $("app").classList.remove("hidden");
+    $("whoami").textContent = me.email + " \u00b7 " + (me.role || "admin").toUpperCase();
+    boot();
+  }
+
+  /* ---------- tabs ---------- */
+  function switchTab(tab) {
+    state.tab = tab;
+    document.querySelectorAll(".tab").forEach(function (x) {
+      x.classList.toggle("active", x.getAttribute("data-tab") === tab);
+    });
+    document.querySelectorAll(".stat").forEach(function (x) {
+      x.classList.toggle("active", x.getAttribute("data-tab") === tab);
+    });
+    render();
+    load(tab);
+  }
+  $("tabs").addEventListener("click", function (e) {
+    var b = e.target.closest(".tab");
+    if (b) switchTab(b.getAttribute("data-tab"));
+  });
+  $("overview").addEventListener("click", function (e) {
+    var b = e.target.closest(".stat");
+    if (b) switchTab(b.getAttribute("data-tab"));
+  });
+
+  function boot() {
+    load("profiles");
+    setInterval(function () { load(state.tab); }, 10000);
+  }
+
+  /* ---------- data ---------- */
+  var LOADER = { profiles: "/admin/users", messages: "/contact", reviews: "/review", logins: "/admin/logins", otps: "/admin/otps" };
+  var FIELDS = { profiles: "users", messages: "messages", reviews: "reviews", logins: "logins", otps: "otps" };
+  function load(tab) {
+    if (!state.loaded[tab]) { state.loaded[tab] = "loading"; render(); }
+    req("GET", LOADER[tab]).then(function (d) {
+      state[FIELDS[tab]] = d;
+      state.loaded[tab] = true;
+      render();
+    }).catch(function (e) {
+      state.loaded[tab] = true;
+      onLoadError(e);
+    });
+  }
+
+  function showLogin() {
+    $("app").classList.add("hidden");
+    $("loginScreen").classList.remove("hidden");
+  }
+
+  function onLoadError(err) {
+    $("foot").classList.remove("ok");
+    $("foot").classList.add("bad");
+    if (err.status === 401 || err.status === 403) {
+      toast("Session expired. Sign in again.", true);
+      showLogin();
+    } else {
+      toast(apiError(err), true);
+    }
+  }
+
+  /* ---------- actions ---------- */
+  window._ban = function (id, name) {
+    if (!confirm("Ban " + name + "? They will be locked out immediately.")) return;
+    req("PATCH", "/admin/users/" + id + "/ban", {}).then(function (u) {
+      state.users = state.users.map(function (x) { return x.id === u.id ? u : x; });
+      render(); toast(name + " banned.");
+    }).catch(function (e) { toast(apiError(e), true); });
+  };
+  window._unban = function (id, name) {
+    if (!confirm("Unban " + name + "?")) return;
+    req("PATCH", "/admin/users/" + id + "/unban", {}).then(function (u) {
+      state.users = state.users.map(function (x) { return x.id === u.id ? u : x; });
+      render(); toast(name + " unbanned.");
+    }).catch(function (e) { toast(apiError(e), true); });
+  };
+  window._delUser = function (id, name) {
+    if (!confirm("Delete " + name + " permanently? Their reviews and login history will be removed too.")) return;
+    req("DELETE", "/admin/users/" + id).then(function () {
+      state.users = state.users.filter(function (x) { return x.id !== id; });
+      render(); toast(name + " deleted.");
+    }).catch(function (e) { toast(apiError(e), true); });
+  };
+  window._delMsg = function (id) {
+    req("DELETE", "/contact/" + id).then(function () {
+      state.messages = state.messages.filter(function (x) { return x.id !== id; });
+      render(); toast("Message deleted.");
+    }).catch(function (e) { toast(apiError(e), true); });
+  };
+  window._delReview = function (id) {
+    req("DELETE", "/review/" + id).then(function () {
+      state.reviews = state.reviews.filter(function (x) { return x.id !== id; });
+      render(); toast("Review deleted.");
+    }).catch(function (e) { toast(apiError(e), true); });
+  };
+  window._like = function (id) {
+    var r = null;
+    for (var i = 0; i < state.reviews.length; i++) {
+      if (state.reviews[i].id === id) { r = state.reviews[i]; break; }
+    }
+    if (!r) return;
+    req(r.liked ? "DELETE" : "POST", "/review/" + id + "/like").then(function (u) {
+      if (u && typeof u.likes === "number") { r.likes = u.likes; r.liked = !!u.liked; }
+      render();
+      toast(r.liked ? "Review liked." : "Like removed.");
+    }).catch(function (e) { toast(apiError(e), true); });
+  };
+  window._delLogin = function (id) {
+    if (!confirm("Delete this login record permanently?")) return;
+    req("DELETE", "/admin/logins/" + id).then(function () {
+      state.logins = state.logins.filter(function (x) { return x.id !== id; });
+      render(); toast("Login record deleted.");
+    }).catch(function (e) { toast(apiError(e), true); });
+  };
+  window._delOtp = function (id) {
+    if (!confirm("Delete this OTP record permanently?")) return;
+    req("DELETE", "/admin/otps/" + id).then(function () {
+      state.otps = state.otps.filter(function (x) { return x.id !== id; });
+      render(); toast("OTP record deleted.");
+    }).catch(function (e) { toast(apiError(e), true); });
+  };
+  window._toggleLogins = function (id) {
+    state.expanded[id] = !state.expanded[id];
+    render();
+  };
+  window._copy = function (text, label) {
+    var done = function () { toast(label + " copied."); };
+    var fail = function () { toast("Could not copy.", true); };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(done).catch(fail);
+      return;
+    }
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      if (document.execCommand("copy")) done(); else fail();
+    } catch (e) {
+      fail();
+    }
+    document.body.removeChild(ta);
+  };
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function fmt(d) {
+    if (!d) return "never";
+    return new Date(d).toLocaleString();
+  }
+  function stars(n) {
+    var s = "";
+    for (var i = 1; i <= 5; i++) s += i <= n ? "\u2605" : "\u2606";
+    return s;
+  }
+  function _crown(rank) {
+    if (!rank || rank > 3) return "";
+    return '<span class="crown r' + rank + '" title="Rank ' + rank + '">' +
+      '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.735H5.81a1 1 0 0 1-.957-.735L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/></svg></span>';
+  }
+  function _bestRank(name) {
+    if (!name || !state.reviews) return null;
+    var k = String(name).toLowerCase();
+    var best = null;
+    state.reviews.forEach(function (r) {
+      if (r.rank && r.rank <= 3 && String(r.name || "").toLowerCase() === k) {
+        if (best === null || r.rank < best) best = r.rank;
+      }
+    });
+    return best;
+  }
+
+  /* ---------- render ---------- */
+  function render() {
+    $("cntProfiles").textContent = state.users.length;
+    $("cntMessages").textContent = state.messages.length;
+    $("cntReviews").textContent = state.reviews.length;
+    $("cntLogins").textContent = state.logins.length;
+    $("cntOtps").textContent = state.otps.length;
+
+    $("ovProfiles").textContent = state.users.length;
+    $("ovReviews").textContent = state.reviews.length;
+    $("ovMessages").textContent = state.messages.length;
+    $("ovLogins").textContent = state.logins.length;
+    $("ovOtps").textContent = state.otps.length;
+
+    var f = $("foot");
+    $("footTime").textContent = new Date().toLocaleTimeString();
+    f.classList.remove("bad");
+    f.classList.add("ok");
+
+    if (state.tab === "profiles") renderUsers();
+    else if (state.tab === "messages") renderMessages();
+    else if (state.tab === "reviews") renderReviews();
+    else if (state.tab === "logins") renderLogins();
+    else renderOtps();
+  }
+
+  function skelHtml(n) {
+    var s = "";
+    for (var i = 0; i < n; i++) s += '<div class="skel"></div>';
+    return '<div class="grid">' + s + "</div>";
+  }
+
+  function renderUsers() {
+    var p = $("panel");
+    p.innerHTML = '<div class="toolbar"><div><h2>Registered Profiles</h2><div class="sub">' + state.users.length + " total \u00b7 syncs every 10s</div></div></div>";
+    if (state.loaded.profiles !== true) { p.innerHTML += skelHtml(3); return; }
+    if (state.users.length === 0) { p.innerHTML += '<div class="empty">No registered users yet.</div>'; return; }
+    var html = '<div class="grid">';
+    state.users.forEach(function (u) {
+      var av = u.profile_image
+        ? '<img src="' + esc(u.profile_image) + '" alt="" />'
+        : esc((u.name || "?")[0].toUpperCase());
+      var logins = state.expanded[u.id]
+        ? '<div class="logins">' + (u.logins.length === 0
+            ? '<div class="login-item">No recorded logins.</div>'
+            : u.logins.map(function (l) {
+                return '<div class="login-item"><div class="ip">' + esc(l.ip_address || "unknown ip") + '</div>' +
+                  '<div class="when">' + fmt(l.created_at) + (l.device ? " \u00b7 " + esc(l.device) : "") + '</div>' +
+                  (l.user_agent ? '<div class="ua">' + esc(l.user_agent) + "</div>" : "") + "</div>";
+              }).join(""))
+        + "</div>" : "";
+      var actions = "";
+      if (u.role === "admin") {
+        actions = '<span class="meta">Protected</span>';
+      } else {
+        actions = '<button class="btn btn-danger btn-sm" onclick="_delUser(\'' + u.id + '\',\'' + esc(u.name).replace(/'/g, "\\'") + '\')">Delete</button>' +
+          (u.is_banned
+            ? '<button class="btn btn-sm" style="background:transparent;border:1px solid var(--secondary);color:var(--secondary);" onclick="_unban(\'' + u.id + '\',\'' + esc(u.name).replace(/'/g, "\\'") + '\')">Unban</button>'
+            : '<button class="btn btn-ghost btn-sm" onclick="_ban(\'' + u.id + '\',\'' + esc(u.name).replace(/'/g, "\\'") + '\')">Ban</button>');
+      }
+      html +=
+        '<div class="card">' +
+          '<div class="card-head"><div class="who">' +
+            '<div class="avatar">' + av + "</div>" +
+            "<div>" +
+              '<div class="name">' + esc(u.name) + _crown(_bestRank(u.name)) + '</div>' +
+              '<a class="meta link" href="mailto:' + esc(u.email) + '">' + esc(u.email) + "</a>" +
+              '<div><span class="role ' + esc(u.role) + '">' + esc(u.role) + "</span>" + (u.is_banned ? ' <span class="chip">Banned</span>' : ' <span class="chip chip-verified">✓ Verified</span>') + "</div>" +
+            "</div></div>" +
+            '<div class="meta" style="text-align:right;">' + fmt(u.created_at) + "</div>" +
+          "</div>" +
+          '<div class="subrow"><span>ID</span><span class="grow"><code>' + esc(u.id) + "</code></span>" +
+            '<button class="btn btn-ghost btn-sm" onclick="_copy(\'' + u.id + '\',\'User ID\')">Copy</button></div>' +
+          '<div class="subrow"><span>Hash</span><span class="grow"><code>' + esc(u.password_hash) + "</code></span>" +
+            '<button class="btn btn-ghost btn-sm" onclick="_copy(\'' + esc(u.password_hash).replace(/'/g, "\\'") + '\',\'Hash\')">Copy</button></div>' +
+          '<div class="subrow"><span>Logins</span><span>' + u.login_count + " \u00b7 last " + fmt(u.last_login) + "</span></div>" +
+          '<div class="card-body"><div class="actions">' + actions + "</div></div>" +
+          '<button class="toggle" onclick="_toggleLogins(\'' + u.id + '\')">' + (state.expanded[u.id] ? "Hide login history" : "View login history (" + u.logins.length + ")") + "</button>" +
+          logins +
+        "</div>";
+    });
+    p.innerHTML += html + "</div>";
+  }
+
+  function renderMessages() {
+    var p = $("panel");
+    p.innerHTML = '<div class="toolbar"><div><h2>Message Inbox</h2><div class="sub">' + state.messages.length + " total \u00b7 syncs every 10s</div></div></div>";
+    if (state.loaded.messages !== true) { p.innerHTML += skelHtml(3); return; }
+    if (state.messages.length === 0) { p.innerHTML += '<div class="empty">No messages yet. Contact form submissions appear here.</div>'; return; }
+    var html = '<div class="grid">';
+    state.messages.forEach(function (m) {
+      html +=
+        '<div class="card"><div class="card-head"><div class="who"><div class="avatar">' + esc((m.name || "?")[0].toUpperCase()) + "</div>" +
+          "<div><div class=\"name\">" + esc(m.name) + "</div>" +
+          '<a class="meta link" href="mailto:' + esc(m.email) + '">' + esc(m.email) + "</a></div></div>" +
+          '<div class="meta" style="text-align:right;">' + fmt(m.created_at) + "</div></div>" +
+          '<div class="card-body"><p class="txt">' + esc(m.message) + "</p>" +
+          '<div class="actions"><button class="btn btn-danger btn-sm" onclick="_delMsg(\'' + m.id + '\')">Delete</button></div></div></div>';
+    });
+    p.innerHTML += html + "</div>";
+  }
+
+  function renderReviews() {
+    var p = $("panel");
+    p.innerHTML = '<div class="toolbar"><div><h2>Reviews</h2><div class="sub">' + state.reviews.length + " total \u00b7 syncs every 10s</div></div></div>";
+    if (state.loaded.reviews !== true) { p.innerHTML += skelHtml(3); return; }
+    if (state.reviews.length === 0) { p.innerHTML += '<div class="empty">No reviews yet. Viewer comments appear here.</div>'; return; }
+    var html = '<div class="grid">';
+    state.reviews.forEach(function (r) {
+      var av = r.profile_image
+        ? '<img src="' + esc(r.profile_image) + '" alt="" />'
+        : esc((r.name || "?")[0].toUpperCase());
+      html +=
+        '<div class="card"><div class="card-head"><div class="who">' +
+          '<div class="avatar">' + av + "</div>" +
+          '<div><div class="name">' + esc(r.name) + _crown(r.rank) + (r.is_verified ? ' <span class="chip chip-verified">✓ Verified</span>' : "") + '</div><div class="stars">' + stars(r.rating) + "</div></div></div>" +
+          '<div class="meta" style="text-align:right;">' + fmt(r.created_at) + "</div></div>" +
+          '<div class="card-body"><p class="txt">' + esc(r.comment) + "</p>" +
+          '<div class="actions"><button class="like-btn' + (r.liked ? ' liked' : '') + '" onclick="_like(\'' + r.id + '\')"><span class="heart">' + (r.liked ? "\u2665" : "\u2661") + '</span> <span>' + (r.likes || 0) + '</span></button>' +
+          '<button class="btn btn-danger btn-sm" onclick="_delReview(\'' + r.id + '\')">Delete</button></div></div></div>';
+    });
+    p.innerHTML += html + "</div>";
+  }
+
+  function renderLogins() {
+    var p = $("panel");
+    p.innerHTML = '<div class="toolbar"><div><h2>Login Records</h2><div class="sub">' + state.logins.length + " total \u00b7 syncs every 10s</div></div></div>";
+    if (state.loaded.logins !== true) { p.innerHTML += skelHtml(3); return; }
+    if (state.logins.length === 0) { p.innerHTML += '<div class="empty">No login records yet. Sign-ins appear here in real time.</div>'; return; }
+    var html = '<div class="grid">';
+    state.logins.forEach(function (l) {
+      html +=
+        '<div class="card"><div class="card-head"><div class="who">' +
+          '<div class="avatar">' + esc((l.email || "?")[0].toUpperCase()) + "</div>" +
+          "<div>" +
+            '<div class="name">' + esc(l.email) + "</div>" +
+            '<div class="meta">' + esc(l.ip_address || "unknown ip") + (l.device ? " \u00b7 " + esc(l.device) : "") + "</div>" +
+          "</div></div>" +
+          "<div style=\"text-align:right;\">" +
+            '<div class="meta">' + fmt(l.created_at) + "</div>" +
+            '<button class="btn btn-danger btn-sm" onclick="_delLogin(' + l.id + ')">Delete</button>' +
+          "</div>" +
+        "</div>" +
+        (l.user_agent
+          ? '<div class="subrow"><span>Device</span><span class="grow"><code class="mono">' + esc(l.user_agent) + "</code></span></div>"
+          : "") +
+        "</div>";
+    });
+    p.innerHTML += html + "</div>";
+  }
+
+  function renderOtps() {
+    var p = $("panel");
+    p.innerHTML = '<div class="toolbar"><div><h2>OTP Codes</h2><div class="sub">' + state.otps.length + " total \u00b7 syncs every 10s</div></div></div>";
+    if (state.loaded.otps !== true) { p.innerHTML += skelHtml(3); return; }
+    if (state.otps.length === 0) { p.innerHTML += '<div class="empty">No OTP records yet. Sign-up and password-reset codes appear here.</div>'; return; }
+    var now = Date.now();
+    var html = '<div class="grid">';
+    state.otps.forEach(function (o) {
+      var expired = new Date(o.expires_at).getTime() < now;
+      var status = o.used
+        ? '<span class="status used">Used</span>'
+        : (expired ? '<span class="status expired">Expired</span>' : '<span class="status active">Active</span>');
+      html +=
+        '<div class="card"><div class="card-head"><div class="who">' +
+          '<div class="avatar">' + esc((o.email || "?")[0].toUpperCase()) + "</div>" +
+          "<div>" +
+            '<div class="name">' + esc(o.email) + "</div>" +
+            '<div><span class="purpose">' + esc(o.purpose) + "</span> \u00b7 " + status + "</div>" +
+          "</div></div>" +
+          "<div style=\"text-align:right;\">" +
+            '<div class="meta">' + fmt(o.created_at) + "</div>" +
+            '<button class="btn btn-danger btn-sm" onclick="_delOtp(' + o.id + ')">Delete</button>' +
+          "</div>" +
+        "</div>" +
+        '<div class="subrow"><span>Hash</span><span class="grow"><code class="mono">' + esc(o.code_hash) + "</code></span>" +
+          '<button class="btn btn-ghost btn-sm" onclick="_copy(\'' + esc(o.code_hash).replace(/'/g, "\\'") + '\',\'OTP Hash\')">Copy</button></div>' +
+        '<div class="subrow"><span>Expires</span><span>' + fmt(o.expires_at) + "</span></div>" +
+        '<div class="subrow"><span>Attempts</span><span>' + o.attempts + "</span></div>" +
+        "</div>";
+    });
+    p.innerHTML += html + "</div>";
+  }
+
+  /* ---------- boot: check existing session ---------- */
+  req("GET", "/auth/me").then(function (me) {
+    if (me && me.role === "admin") { enter(me); }
+  }).catch(function () {});
+
+  /* ---------- app update check (Android bridge) ---------- */
+  function checkUpdate() {
+    var u = (typeof window.AndroidUpdater !== "undefined") ? window.AndroidUpdater : null;
+    if (!u || typeof u.getVersion !== "function") return;
+    var installed;
+    try { installed = String(u.getVersion()); } catch (e) { return; }
+    req("GET", "/apk/version").then(function (v) {
+      if (!v || !v.version || String(v.version) === installed) return;
+      $("updateText").innerHTML = "Update available <b>v" + installed + "</b> \u2192 <b>v" + v.version + "</b>";
+      $("updateBtn").onclick = function () {
+        try { u.download(v.apk_url || API + "/apk/download"); }
+        catch (e) { toast("Could not start the update.", true); }
+      };
+      $("updateBar").classList.add("show");
+    }).catch(function () {});
+  }
+  checkUpdate();
+})();
+</script>
+</body>
+</html>

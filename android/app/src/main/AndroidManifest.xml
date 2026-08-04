@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.alex.admin"
+    android:versionCode="9"
+    android:versionName="1.0.8">
+
+    <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="34" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <application
+        android:theme="@style/Theme.Splash"
+        android:label="𝙰𝚕𝚎𝚡シ"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:extractNativeLibs="false"
+        android:usesCleartextTraffic="false">
+
+        <activity
+            android:name="com.alex.admin.SplashActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="com.alex.admin.MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask" />
+    </application>
+</manifest>

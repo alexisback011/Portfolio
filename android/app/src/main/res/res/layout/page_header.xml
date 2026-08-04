@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingBottom="4dp">
+
+    <TextView
+        android:id="@+id/pageEyebrow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="ADMIN"
+        android:textColor="@color/primary"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:fontFamily="@font/jetbrains_mono_700"
+        android:letterSpacing="0.3" />
+
+    <TextView
+        android:id="@+id/pageTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:textColor="@color/fg"
+        android:textSize="26sp"
+        android:fontFamily="@font/unbounded_700"
+        android:letterSpacing="-0.02" />
+
+    <TextView
+        android:id="@+id/pageDesc"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:textColor="@color/dim"
+        android:textSize="13sp"
+        android:fontFamily="@font/jetbrains_mono_400"
+        android:lineSpacingExtra="3dp" />
+</LinearLayout>
