@@ -38,10 +38,12 @@ const Equalizer = ({ playing }) => (
 const NowPlaying = () => {
   const [data, setData] = useState(null);
   const [open, setOpen] = useState(false);
-  const dragX = useMotionValue(0);
-  const dragY = useMotionValue(0);
+  const [savedPos] = useState(loadPos);
+  const dragX = useMotionValue(savedPos[0]);
+  const dragY = useMotionValue(savedPos[1]);
   const wrapRef = useRef(null);
   const cardRef = useRef(null);
+  const mounted = useRef(false);
 
   const clampDrag = (write) => {
     const el = wrapRef.current;
@@ -64,11 +66,21 @@ const NowPlaying = () => {
 
   useEffect(() => {
     if (!data || data.configured === false) return;
-    const [sx, sy] = loadPos();
-    dragX.set(sx);
-    dragY.set(sy);
+    if (!mounted.current) {
+      mounted.current = true;
+      clampDrag(false);
+    }
+  }, [data]);
+
+  useEffect(() => {
     clampDrag(false);
-  }, [data, open, dragX, dragY]);
+  }, [open]);
+
+  useEffect(() => {
+    const onResize = () => clampDrag(false);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
