@@ -1,9 +1,20 @@
-import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState, useRef } from "react";
+import { motion, AnimatePresence, useMotionValue } from "framer-motion";
 import { Music, ExternalLink, ChevronRight } from "lucide-react";
 import { API } from "../../lib/api";
 
 const POLL_MS = 30000;
+const POSITION_KEY = "nowPlayingPos";
+
+const loadPos = () => {
+  try {
+    const raw = JSON.parse(localStorage.getItem(POSITION_KEY) || "[0,0]");
+    if (Array.isArray(raw) && raw.length === 2 && raw.every(Number.isFinite)) {
+      return raw;
+    }
+  } catch {}
+  return [0, 0];
+};
 
 const formatMs = (ms) => {
   if (!ms) return "0:00";
@@ -27,6 +38,37 @@ const Equalizer = ({ playing }) => (
 const NowPlaying = () => {
   const [data, setData] = useState(null);
   const [open, setOpen] = useState(false);
+  const dragX = useMotionValue(0);
+  const dragY = useMotionValue(0);
+  const wrapRef = useRef(null);
+  const cardRef = useRef(null);
+
+  const clampDrag = (write) => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const w = Math.max(el.offsetWidth, cardRef.current?.offsetWidth || 0, 280);
+    const h = Math.max(el.offsetHeight, cardRef.current?.offsetHeight || 0, 420);
+    const m = 20;
+    const nx = Math.min(m, Math.max(-(vw - w - m), dragX.get()));
+    const ny = Math.min(m, Math.max(-(vh - h - m), dragY.get()));
+    dragX.set(nx);
+    dragY.set(ny);
+    if (write) {
+      try {
+        localStorage.setItem(POSITION_KEY, JSON.stringify([nx, ny]));
+      } catch {}
+    }
+  };
+
+  useEffect(() => {
+    if (!data || data.configured === false) return;
+    const [sx, sy] = loadPos();
+    dragX.set(sx);
+    dragY.set(sy);
+    clampDrag(false);
+  }, [data, open, dragX, dragY]);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,10 +106,19 @@ const NowPlaying = () => {
     : 0;
 
   return (
-    <div className="fixed bottom-5 right-5 z-[90] flex flex-col items-end gap-2">
+    <motion.div
+      ref={wrapRef}
+      style={{ x: dragX, y: dragY }}
+      drag
+      dragMomentum={false}
+      dragElastic={0}
+      onDragEnd={() => clampDrag(true)}
+      className="fixed bottom-5 right-5 z-[90] flex cursor-grab flex-col items-end gap-2 active:cursor-grabbing"
+    >
       <AnimatePresence>
         {open && (
           <motion.div
+            ref={cardRef}
             initial={{ opacity: 0, y: 12, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.95 }}
@@ -181,7 +232,7 @@ const NowPlaying = () => {
           }`}
         />
       </button>
-    </div>
+    </motion.div>
   );
 };
 
